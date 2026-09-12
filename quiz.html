@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Knowledge Check</title>
+<style>
+  :root {
+    --brand: #1a73e8; --ink: #1c2128; --muted: #6b7280;
+    --line: #e5e7eb; --ok: #1a7f37; --ok-bg: #eafaef;
+    --bad: #b42318; --bad-bg: #fde9e7; --bg: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5; display: flex; flex-direction: column; }
+
+  /* Header — always visible */
+  .qz-header { background: var(--brand); color: #fff; padding: 14px 22px; flex: 0 0 auto;
+    display: flex; align-items: center; gap: 14px; }
+  .qz-header img { height: 40px; width: auto; display: none;
+    background: #fff; border-radius: 6px; padding: 4px; }
+  .qz-header h1 { margin: 0; font-size: 18px; }
+  .qz-header p { margin: 2px 0 0; font-size: 13px; opacity: 0.9; }
+
+  /* Progress bar */
+  .qz-progress-wrap { background: #d7e5fb; height: 6px; flex: 0 0 auto; }
+  .qz-progress { background: var(--brand); height: 100%; width: 0%; transition: width 0.3s; }
+
+  /* Body */
+  .qz-body { flex: 1 1 auto; overflow-y: auto; padding: 22px; }
+  .qz-inner { max-width: 640px; margin: 0 auto; }
+  .qz-count { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .qz-question { font-size: 18px; font-weight: 600; margin: 0 0 16px; }
+
+  .qz-option { display: block; width: 100%; text-align: left; background: #fff;
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+    font-size: 15px; font-family: inherit; color: var(--ink);
+    margin-bottom: 10px; cursor: pointer; }
+  .qz-option:hover { border-color: var(--brand); }
+  .qz-option:disabled { cursor: default; opacity: 1; }
+  .qz-option.correct { border-color: var(--ok); background: var(--ok-bg); font-weight: 600; }
+  .qz-option.wrong { border-color: var(--bad); background: var(--bad-bg); }
+
+  .qz-feedback { display: none; border-radius: 10px; padding: 14px 16px;
+    font-size: 14px; margin-top: 14px; }
+  .qz-feedback.good { display: block; background: var(--ok-bg); border-left: 4px solid var(--ok); }
+  .qz-feedback.bad { display: block; background: var(--bad-bg); border-left: 4px solid var(--bad); }
+  .qz-feedback .qz-verdict { font-weight: 700; margin-bottom: 4px; }
+
+  .qz-review-btn { display: inline-block; margin-top: 10px; background: #fff;
+    border: 1px solid var(--bad); color: var(--bad); border-radius: 8px;
+    padding: 8px 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .qz-review-btn:hover { background: var(--bad); color: #fff; }
+
+  /* Footer nav */
+  .qz-footer { flex: 0 0 auto; border-top: 1px solid var(--line); background: #fff;
+    padding: 12px 22px; display: flex; justify-content: space-between; align-items: center; }
+  .qz-nav-btn { background: var(--brand); color: #fff; border: none; border-radius: 8px;
+    padding: 10px 20px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .qz-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .qz-nav-btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+
+  /* Score screen */
+  .qz-score { text-align: center; padding: 40px 20px; }
+  .qz-score h2 { font-size: 24px; margin: 0 0 8px; }
+  .qz-score .qz-big { font-size: 44px; font-weight: 800; color: var(--brand); margin: 10px 0; }
+  .qz-score p { color: var(--muted); }
+  .qz-retry { margin-top: 16px; }
+
+  .qz-error { max-width: 560px; margin: 60px auto; text-align: center; color: var(--muted);
+    font-size: 16px; padding: 0 20px; }
+</style>
+</head>
+<body>
+
+<div class="qz-header">
+  <img id="qzLogo" alt="" />
+  <div>
+    <h1 id="qzTitle">Knowledge Check</h1>
+    <p id="qzSubtitle"></p>
+  </div>
+</div>
+<div class="qz-progress-wrap"><div class="qz-progress" id="qzProgress"></div></div>
+
+<div class="qz-body">
+  <div class="qz-inner" id="qzInner">
+    <div class="qz-error" id="qzLoading">Loading the knowledge check…</div>
+  </div>
+</div>
+
+<div class="qz-footer" id="qzFooter" style="display:none;">
+  <button class="qz-nav-btn ghost" id="qzPrevBtn">◂ Previous</button>
+  <button class="qz-nav-btn" id="qzNextBtn">Next ▸</button>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // WHERE THE QUESTIONS COME FROM
+  //   quiz.html?quiz=10            -> 10-quiz.json from the default repo
+  //   quiz.html?quiz=10&repo=o/r   -> 10-quiz.json from another repo
+  //   quiz.html?src=<full URL>     -> any exact file address (override)
+  // ============================================================
+  var DEFAULT_REPO = 'jdidonatojr/language-teammate-files';
+  var params = new URLSearchParams(window.location.search);
+  var src = params.get('src');
+  if (!src) {
+    var quizNum = (params.get('quiz') || '').trim();
+    var repo = (params.get('repo') || DEFAULT_REPO).trim();
+    if (quizNum) {
+      src = 'https://raw.githubusercontent.com/' + repo + '/main/' + quizNum + '-quiz.json';
+    }
+  }
+
+  var embedded = (window.parent !== window);  // running inside the course overlay?
+  var QUIZ = null;
+  var current = 0;
+  var answers = [];   // per question: null = unanswered, true = right, false = wrong
+
+  function el(id) { return document.getElementById(id); }
+
+  function showError(msg) {
+    el('qzInner').innerHTML = '<div class="qz-error">' + msg + '</div>';
+    el('qzFooter').style.display = 'none';
+  }
+
+  if (!src) {
+    showError('No quiz was specified. The link should look like: quiz.html?quiz=10');
+    return;
+  }
+
+  fetch(src, { cache: 'no-store' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) { boot(data); })
+    .catch(function() {
+      showError('The knowledge check could not be loaded. Please close this window and try again.');
+    });
+
+  function boot(data) {
+    QUIZ = data;
+    var brand = data.brand || {};
+    if (brand.color) document.documentElement.style.setProperty('--brand', brand.color);
+    if (brand.logo) {
+      var logo = el('qzLogo');
+      logo.src = brand.logo;
+      logo.style.display = 'block';
+      logo.onerror = function() { logo.style.display = 'none'; };
+    }
+    el('qzTitle').textContent = brand.title || 'Knowledge Check';
+    el('qzSubtitle').textContent = brand.subtitle || '';
+    document.title = (brand.title || 'Knowledge Check');
+    answers = data.questions.map(function() { return null; });
+    el('qzFooter').style.display = 'flex';
+    el('qzPrevBtn').addEventListener('click', function() { go(current - 1); });
+    el('qzNextBtn').addEventListener('click', function() {
+      if (current === QUIZ.questions.length - 1 && answers[current] !== null) {
+        showScore();
+      } else {
+        go(current + 1);
+      }
+    });
+    go(0);
+  }
+
+  function go(n) {
+    if (n < 0 || n >= QUIZ.questions.length) return;
+    current = n;
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    var q = QUIZ.questions[current];
+    var total = QUIZ.questions.length;
+    var answered = answers[current] !== null;
+
+    el('qzProgress').style.width = Math.round(((current + (answered ? 1 : 0)) / total) * 100) + '%';
+
+    var html = '';
+    html += '<div class="qz-count">Question ' + (current + 1) + ' of ' + total + '</div>';
+    html += '<p class="qz-question"></p>';
+    q.choices.forEach(function(c, i) {
+      html += '<button class="qz-option" data-i="' + i + '"></button>';
+    });
+    html += '<div class="qz-feedback" id="qzFeedback">' +
+            '<div class="qz-verdict" id="qzVerdict"></div>' +
+            '<div id="qzFeedbackText"></div>' +
+            '<div id="qzReviewWrap"></div>' +
+            '</div>';
+    el('qzInner').innerHTML = html;
+
+    // Fill text safely (no HTML injection from the JSON).
+    el('qzInner').querySelector('.qz-question').textContent = q.question;
+    var buttons = el('qzInner').querySelectorAll('.qz-option');
+    buttons.forEach(function(btn, i) {
+      btn.textContent = String.fromCharCode(65 + i) + ') ' + q.choices[i];
+      btn.addEventListener('click', function() { answer(i); });
+    });
+
+    if (answered) paintAnswered();
+
+    el('qzPrevBtn').disabled = (current === 0);
+    updateNextButton();
+  }
+
+  function updateNextButton() {
+    var last = (current === QUIZ.questions.length - 1);
+    var answered = answers[current] !== null;
+    var btn = el('qzNextBtn');
+    btn.textContent = (last && answered) ? 'See my score ✓' : 'Next ▸';
+    btn.disabled = !answered;
+  }
+
+  function answer(i) {
+    if (answers[current] !== null) return;   // already answered — locked
+    var q = QUIZ.questions[current];
+    answers[current] = (i === q.answer);
+    q.picked = i;
+    paintAnswered();
+    updateNextButton();
+    el('qzProgress').style.width =
+      Math.round(((current + 1) / QUIZ.questions.length) * 100) + '%';
+  }
+
+  function paintAnswered() {
+    var q = QUIZ.questions[current];
+    var right = answers[current] === true;
+    var buttons = el('qzInner').querySelectorAll('.qz-option');
+    buttons.forEach(function(btn, i) {
+      btn.disabled = true;
+      if (i === q.answer) btn.classList.add('correct');
+      if (q.picked !== undefined && i === q.picked && i !== q.answer) btn.classList.add('wrong');
+    });
+    var fb = el('qzFeedback');
+    fb.className = 'qz-feedback ' + (right ? 'good' : 'bad');
+    el('qzVerdict').textContent = right ? '✓ Correct!' : '✗ Not quite.';
+    el('qzFeedbackText').textContent = right ? (q.feedback_correct || '') : (q.feedback_incorrect || '');
+    var wrap = el('qzReviewWrap');
+    wrap.innerHTML = '';
+    if (!right && embedded && q.slide) {
+      var rb = document.createElement('button');
+      rb.className = 'qz-review-btn';
+      rb.textContent = '↩ Review slide ' + q.slide;
+      rb.addEventListener('click', function() {
+        window.parent.postMessage({ type: 'aila-goto-slide', slide: q.slide }, '*');
+      });
+      wrap.appendChild(rb);
+    }
+  }
+
+  function showScore() {
+    var total = QUIZ.questions.length;
+    var right = answers.filter(function(a) { return a === true; }).length;
+    var pct = Math.round((right / total) * 100);
+    var msg;
+    if (pct === 100) msg = 'Perfect score — outstanding!';
+    else if (pct >= 80) msg = 'Great job — you know this material well.';
+    else if (pct >= 60) msg = 'Good effort — a quick review of a few slides will lock it in.';
+    else msg = 'Worth a review — use the slide references and try again.';
+
+    // v1.1: hand the result to the course page (it saves the score to
+    // the learner's profile). Does nothing when opened on its own.
+    if (embedded) {
+      try {
+        window.parent.postMessage({ type: 'aila-quiz-result',
+          right: right, total: total, score: pct }, '*');
+      } catch (e) {}
+    }
+
+    el('qzProgress').style.width = '100%';
+    el('qzInner').innerHTML =
+      '<div class="qz-score">' +
+      '<h2>Knowledge check complete</h2>' +
+      '<div class="qz-big">' + right + ' / ' + total + '</div>' +
+      '<p>' + msg + '</p>' +
+      '<button class="qz-nav-btn qz-retry" id="qzRetryBtn">Try again</button>' +
+      '</div>';
+    el('qzFooter').style.display = 'none';
+    el('qzRetryBtn').addEventListener('click', function() {
+      answers = QUIZ.questions.map(function() { return null; });
+      QUIZ.questions.forEach(function(q) { delete q.picked; });
+      el('qzFooter').style.display = 'flex';
+      go(0);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
