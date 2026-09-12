@@ -1,0 +1,2 @@
+# Python dependencies for the API functions.
+# Language Teammate uses only the Python standard library — nothing to install.
