@@ -1,0 +1,23 @@
+{
+  "101": {
+    "id": "italian-101",
+    "title": "Italian 101 — Enough to Get By",
+    "totalSlides": 10,
+    "pdfUrl": "https://raw.githubusercontent.com/jdidonatojr/language-teammate-files/main/101-italian-101.pdf",
+    "firstMessage": "Welcome to Italian 101! I'm your language teammate. Say \"translator mode\" any time you need me to interpret for you right now. Otherwise, are you ready to begin?",
+    "sections": [
+      {
+        "startSlide": 1,
+        "label": "Greetings"
+      },
+      {
+        "startSlide": 4,
+        "label": "Ordering food"
+      },
+      {
+        "startSlide": 7,
+        "label": "Getting around"
+      }
+    ]
+  }
+}
