@@ -83,6 +83,11 @@
            and the slide translations, then plays the video
      v6.1: Skip pauses the welcome video (no more video + teacher
            speaking over each other)
+     v10.2: Android share target — WhatsApp long-press -> Share -> Teammate opens
+           the text tool with the message already pasted (remembers your language)
+     v10.1: text translator keeps the conversation thread (context), knows who is
+           speaking (man/woman) and how formal; never guesses names of foods,
+           fish, streets, places; flags unclear words
      v10.0: installable app (PWA) — manifest, service worker, Add to Home Screen
            button on the language popover until installed; hosted on Vercel
      v9.3: text-message translator on the translator panel (paste theirs → my
@@ -997,6 +1002,18 @@
   .aila-tr-text-out { margin-top: 10px; background: #10233f; border: 2px dashed #4f8ef7; border-radius: 10px; padding: 10px 12px; }
   .aila-tr-text-label { font-size: 12px; color: #8fb4ff; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
   .aila-tr-text-out #ailaTxtOut { font-size: 17px; color: #fff; line-height: 1.45; white-space: pre-wrap; }
+  .aila-tr-about { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: #aab4c8; margin-bottom: 8px; }
+  .aila-tr-about button { background: #10233f; color: #aab4c8; border: 1px solid #2c3a57; border-radius: 14px;
+    padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .aila-tr-about button.on { background: #223a6b; color: #fff; border-color: #4f8ef7; }
+  .aila-tr-thread { max-height: 150px; overflow: auto; margin-bottom: 8px; display: none; }
+  .aila-tr-thread.show { display: block; }
+  .aila-tr-thread div { font-size: 13px; line-height: 1.4; padding: 6px 9px; border-radius: 9px; margin: 4px 0; max-width: 92%; }
+  .aila-tr-thread .them { background: #10233f; color: #e6ebf5; }
+  .aila-tr-thread .me { background: #223a6b; color: #fff; margin-left: auto; }
+  .aila-tr-thread small { display: block; color: #8fb4ff; font-size: 11px; }
+  .aila-tr-text-notes { font-size: 12px; color: #ffd166; margin-top: 8px; min-height: 0; }
+  .aila-tr-clear { display: block; margin-top: 8px; font-size: 12px; color: #8fb4ff; cursor: pointer; text-decoration: underline; text-align: right; }
   .aila-tr-text-out .copy { margin-top: 8px; background: #6f42c1; color: #fff; border: none; border-radius: 8px;
     padding: 8px 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
   /* While translating, the slide controls make no sense — hide them. */
@@ -1397,6 +1414,15 @@
 </div>
 <button class="aila-tr-text-btn" id="ailaTrTextBtn">✍️ Translate a text message</button>
 <div class="aila-tr-text" id="ailaTrText">
+<div class="aila-tr-about">
+<span>I am:</span>
+<button data-k="gender" data-v="man">a man</button>
+<button data-k="gender" data-v="woman">a woman</button>
+<span style="margin-left:10px;">Talking to:</span>
+<button data-k="register" data-v="formal">a stranger</button>
+<button data-k="register" data-v="informal">family / friend</button>
+</div>
+<div class="aila-tr-thread" id="ailaTxtThread"></div>
 <div class="aila-tr-text-dir">
 <button class="on" id="ailaTxtToMe" data-dir="me">They wrote it → my language</button>
 <button id="ailaTxtToThem" data-dir="them">I'm writing → their language</button>
@@ -1410,7 +1436,9 @@
 <div class="aila-tr-text-label" id="ailaTxtOutLabel">Translation</div>
 <div id="ailaTxtOut"></div>
 <button class="copy" id="ailaTxtCopy">Copy</button>
+<div class="aila-tr-text-notes" id="ailaTxtNotes"></div>
 </div>
+<a class="aila-tr-clear" id="ailaTxtClear">Start a new conversation</a>
 </div>
 <div class="aila-tr-status" id="ailaTrStatus"></div>
 </div>
@@ -1529,6 +1557,15 @@
   // ============================================================
   const urlParams = new URLSearchParams(window.location.search);
   let courseKey = urlParams.get('course');
+
+  // v10.2: text shared INTO the app (Android share sheet -> Teammate).
+  // Stash it, clean the address, and open the text translator after boot.
+  var sharedText = '';
+  try {
+    var st = (urlParams.get('text') || '') + (urlParams.get('url') ? ' ' + urlParams.get('url') : '');
+    if (st.trim()) { sharedText = st.trim(); sessionStorage.setItem('lt_shared_text', sharedText); }
+    else { sharedText = sessionStorage.getItem('lt_shared_text') || ''; }
+  } catch (e) {}
 
   // MASK: hide the course number from the address bar. The number is
   // read once, remembered for this tab (so refresh still works), and
@@ -2026,6 +2063,7 @@
   // ============================================================
   document.getElementById('ailaLangGo').addEventListener('click', function() {
     var lang = document.getElementById('ailaLangSelectGate').value || 'en';
+    rememberMyLang(lang);
     currentLang = lang;
     document.getElementById('ailaLangSelect').value = lang;
     chooseCourse(function() { startCourseFromGate(lang); });
@@ -2048,8 +2086,10 @@
   }
 
   // v7.1: "Translate now" skips the video and opens the translator panel.
+  function rememberMyLang(lang) { try { localStorage.setItem('lt_my_lang', lang); } catch (e) {} }
   document.getElementById('ailaLangTranslate').addEventListener('click', function() {
     var lang = document.getElementById('ailaLangSelectGate').value || 'en';
+    rememberMyLang(lang);
     currentLang = lang;
     document.getElementById('ailaLangSelect').value = lang;
     document.getElementById('ailaLangGate').classList.add('hidden');
@@ -2241,6 +2281,47 @@
   // ============================================================
   var TEXT_URL = 'https://language-teammate.vercel.app/api/translate-text';
   var txtDir = 'me';
+  // v10.1: who am I, how formal, and the thread so far (kept on this device only)
+  var txtAbout = { gender: '', register: '' };
+  var txtThread = [];   // [{who:'me'|'them', text: original, xlat: translation}]
+  try { txtAbout = JSON.parse(localStorage.getItem('lt_txt_about') || '{}') || {}; } catch (e) {}
+  try { txtThread = JSON.parse(sessionStorage.getItem('lt_txt_thread') || '[]') || []; } catch (e) {}
+
+  function paintAbout() {
+    var bs = document.querySelectorAll('.aila-tr-about button');
+    for (var i = 0; i < bs.length; i++) {
+      bs[i].classList.toggle('on', txtAbout[bs[i].getAttribute('data-k')] === bs[i].getAttribute('data-v'));
+    }
+  }
+  document.querySelector('.aila-tr-about').addEventListener('click', function(e) {
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (!b) return;
+    var k = b.getAttribute('data-k'), v = b.getAttribute('data-v');
+    txtAbout[k] = (txtAbout[k] === v) ? '' : v;
+    try { localStorage.setItem('lt_txt_about', JSON.stringify(txtAbout)); } catch (e2) {}
+    paintAbout();
+  });
+  function paintThread() {
+    var box = document.getElementById('ailaTxtThread');
+    box.innerHTML = '';
+    txtThread.slice(-10).forEach(function(m) {
+      var d = document.createElement('div');
+      d.className = m.who;
+      var sm = document.createElement('small'); sm.textContent = m.who === 'me' ? 'You' : 'Them';
+      d.appendChild(sm);
+      d.appendChild(document.createTextNode(m.xlat || m.text));
+      box.appendChild(d);
+    });
+    box.classList.toggle('show', txtThread.length > 0);
+    box.scrollTop = box.scrollHeight;
+  }
+  function saveThread() { try { sessionStorage.setItem('lt_txt_thread', JSON.stringify(txtThread.slice(-20))); } catch (e) {} }
+  document.getElementById('ailaTxtClear').addEventListener('click', function() {
+    txtThread = []; saveThread(); paintThread();
+    document.getElementById('ailaTxtOutWrap').style.display = 'none';
+    document.getElementById('ailaTxtIn').value = '';
+  });
+  paintAbout(); paintThread();
 
   document.getElementById('ailaTrTextBtn').addEventListener('click', function() {
     var box = document.getElementById('ailaTrText');
@@ -2270,13 +2351,24 @@
       target = targetLang;
     }
     var btn = this; btn.disabled = true; btn.textContent = 'Translating…';
+    // Context for the translator: the last messages, in their ORIGINAL words.
+    var history = txtThread.slice(-10).map(function(m) { return { who: m.who, text: m.text }; });
     fetch(TEXT_URL, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text, target_lang: target })
+      body: JSON.stringify({
+        text: text, target_lang: target,
+        direction: txtDir === 'me' ? 'me' : 'them',
+        speaker_gender: txtAbout.gender || '', register: txtAbout.register || '',
+        history: history
+      })
     })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data && data.ok && data.text) {
+          txtThread.push({ who: txtDir === 'me' ? 'them' : 'me', text: text, xlat: data.text });
+          saveThread(); paintThread();
+          document.getElementById('ailaTxtNotes').textContent = data.notes ? '⚠ ' + data.notes : '';
+          document.getElementById('ailaTxtIn').value = '';
           document.getElementById('ailaTxtOut').textContent = data.text;
           document.getElementById('ailaTxtOutLabel').textContent =
             (txtDir === 'me' ? 'In ' + target + (data.detected ? ' (they wrote in ' + data.detected + ')' : '')
@@ -3614,6 +3706,37 @@
   // v7.6: load the course from the address (or the placeholder) now that
   // every variable above exists.
   applyCourse(courseKey);
+
+  // v10.2: shared text -> open the translator panel with the text tool ready.
+  (function() {
+    if (!sharedText) return;
+    var myLang = '';
+    try { myLang = localStorage.getItem('lt_my_lang') || ''; } catch (e) {}
+    function openWithShared() {
+      try { sessionStorage.removeItem('lt_shared_text'); } catch (e) {}
+      currentLang = myLang || 'en';
+      document.getElementById('ailaLangSelectGate').value = currentLang;
+      document.getElementById('ailaLangSelect').value = currentLang;
+      document.getElementById('ailaLangGate').classList.add('hidden');
+      if (vimeoPlayer) { vimeoPlayer.pause().catch(function() {}); }
+      showTranslatorPanel();
+      var box = document.getElementById('ailaTrText');
+      box.classList.add('show');
+      document.getElementById('ailaTrTextBtn').textContent = '✍️ Hide the text translator';
+      setTxtDir('me');
+      document.getElementById('ailaTxtIn').value = sharedText;
+      trStatus('Message received. Tap Translate.');
+      document.getElementById('ailaTxtGo').focus();
+    }
+    // Wait until the email gate (if any) is out of the way.
+    var tries = 0;
+    var t = setInterval(function() {
+      tries++;
+      var gateOpen = document.getElementById('ailaGate').classList.contains('show');
+      if (!gateOpen) { clearInterval(t); openWithShared(); }
+      else if (tries > 600) { clearInterval(t); }   // ~5 minutes, then give up quietly
+    }, 500);
+  })();
 
   // v7.6: gate wording — "phone" on a phone, "device" everywhere else.
   (function() {
