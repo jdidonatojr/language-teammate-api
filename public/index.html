@@ -83,6 +83,8 @@
            and the slide translations, then plays the video
      v6.1: Skip pauses the welcome video (no more video + teacher
            speaking over each other)
+     v10.4: "I am a man / a woman" moved to the start screen; sent to all three
+           agents as speaker_gender; removed from the text tool
      v10.3: service worker always fetches the page fresh; version stamp with
            "Update available" bar; ↻ refresh button in the bottom bar
      v10.2: Android share target — WhatsApp long-press -> Share -> Teammate opens
@@ -1048,6 +1050,12 @@
   }
   .aila-lang-translate:hover { background: #218838; }
   .aila-lang-or { font-size: 13px; color: #888; margin: 0 0 8px 0; }
+  .aila-me-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px; color: #555; margin: -6px 0 14px; }
+  .aila-me-row button { background: #fff; color: #333; border: 1px solid #ccc; border-radius: 16px;
+    padding: 6px 14px; font-size: 14px; cursor: pointer; }
+  .aila-me-row button.on { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+  .aila-me-why { width: 100%; font-size: 12px; color: #999; }
   /* Install nudge (v10.0) */
   .aila-install { display: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; }
   .aila-install.show { display: block; }
@@ -1316,6 +1324,12 @@
 <option value="hi">हिन्दी</option>
 <option value="ar">العربية</option>
 </select>
+<div class="aila-me-row" id="ailaMeRow">
+<span>I am</span>
+<button data-v="man">a man</button>
+<button data-v="woman">a woman</button>
+<span class="aila-me-why">so the grammar comes out right</span>
+</div>
 <button class="aila-lang-translate" id="ailaLangTranslate">🗣 Open the translator</button>
 <button class="aila-lang-video" id="ailaLangVideo">▶ Watch how it works (1 min)</button>
 <button class="aila-lang-go" id="ailaLangGo">📚 Start the course ▸</button>
@@ -1423,10 +1437,7 @@
 <button class="aila-tr-text-btn" id="ailaTrTextBtn">✍️ Translate a text message</button>
 <div class="aila-tr-text" id="ailaTrText">
 <div class="aila-tr-about">
-<span>I am:</span>
-<button data-k="gender" data-v="man">a man</button>
-<button data-k="gender" data-v="woman">a woman</button>
-<span style="margin-left:10px;">Talking to:</span>
+<span>Talking to:</span>
 <button data-k="register" data-v="formal">a stranger</button>
 <button data-k="register" data-v="informal">family / friend</button>
 </div>
@@ -1543,7 +1554,7 @@
 
   // v10.3: version stamp. Bump this on every release; the app compares it
   // with the copy on the server and offers a refresh when they differ.
-  var APP_VERSION = '10.3';
+  var APP_VERSION = '10.4';
 
   // ============================================================
   // COURSE LIST
@@ -1662,7 +1673,8 @@
       start_mode: startMode || 'course',  // v7.1: 'translator' or 'course'
       target_lang: targetLang || 'auto',  // v7.1: 'auto' or a language name
       day: String(currentDay || 1),       // v8.0: phrase-a-day day number
-      learning_lang: learningLang || 'none' // v8.0: language being learned
+      learning_lang: learningLang || 'none', // v8.0: language being learned
+      speaker_gender: (typeof txtAbout !== 'undefined' && txtAbout.gender) ? txtAbout.gender : 'unknown' // v10.4
     }));
   }
 
@@ -2301,6 +2313,21 @@
   var txtThread = [];   // [{who:'me'|'them', text: original, xlat: translation}]
   try { txtAbout = JSON.parse(localStorage.getItem('lt_txt_about') || '{}') || {}; } catch (e) {}
   try { txtThread = JSON.parse(sessionStorage.getItem('lt_txt_thread') || '[]') || []; } catch (e) {}
+
+  function paintMeRow() {
+    var bs = document.querySelectorAll('#ailaMeRow button');
+    for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', txtAbout.gender === bs[i].getAttribute('data-v'));
+  }
+  document.getElementById('ailaMeRow').addEventListener('click', function(e) {
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (!b) return;
+    var v = b.getAttribute('data-v');
+    txtAbout.gender = (txtAbout.gender === v) ? '' : v;
+    try { localStorage.setItem('lt_txt_about', JSON.stringify(txtAbout)); } catch (e2) {}
+    paintMeRow();
+    updateWidgetVars();
+  });
+  paintMeRow();
 
   function paintAbout() {
     var bs = document.querySelectorAll('.aila-tr-about button');
