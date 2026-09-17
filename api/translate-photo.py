@@ -91,6 +91,13 @@ class handler(BaseHTTPRequestHandler):
                 "- Start with one short line saying what the photo is and its language, "
                 "like \"Menu (Russian)\" or \"Train schedule (Japanese)\".\n"
                 "- If part of the photo is unreadable, say \"[unreadable]\" in that spot and keep going.\n"
+                "- Names of specific dishes, fish, ingredients, brands, streets, stations, and places are NEVER "
+                f"translated word by word. If {lang_name} has an accepted name, use it; otherwise keep the original "
+                "word exactly as written and add a very short gloss in parentheses. A wrong guess can feed someone "
+                "something they can't eat or send them to the wrong street.\n"
+                "- Allergens matter: if a line mentions nuts, shellfish, dairy, gluten, eggs, soy, pork, or alcohol, "
+                "make sure that word survives the translation exactly.\n"
+                "- If a word is unclear, put the original in square brackets after your best reading.\n"
                 "- Do not add greetings, comments, or advice. Just the translation."
             )
 
