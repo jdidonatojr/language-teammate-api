@@ -1,7 +1,8 @@
-// Language Teammate service worker (v1) — makes the page installable and
-// shows a friendly offline page instead of a blank screen. Everything real
-// (voice, photos, translations) needs the internet, so we do NOT cache the
-// app itself: the page always loads fresh so updates land instantly.
+// Language Teammate service worker (v2)
+// - Makes the page installable.
+// - Page loads ALWAYS go to the network with the cache bypassed, so a
+//   reopened app gets the newest version (v1 let the phone reuse a stale copy).
+// - Shows a friendly offline page instead of a blank screen.
 const OFFLINE_HTML = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Language Teammate — offline</title>
@@ -16,8 +17,9 @@ border:none;border-radius:8px;padding:12px 20px;font-size:16px;font-weight:600}<
 self.addEventListener('install', function(e) { self.skipWaiting(); });
 self.addEventListener('activate', function(e) { e.waitUntil(self.clients.claim()); });
 self.addEventListener('fetch', function(e) {
-  if (e.request.mode !== 'navigate') return;   // only page loads get the offline fallback
-  e.respondWith(fetch(e.request).catch(function() {
+  if (e.request.mode !== 'navigate') return;
+  // cache: 'reload' = ignore anything stored on the phone, ask the server.
+  e.respondWith(fetch(e.request, { cache: 'reload' }).catch(function() {
     return new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }));
 });
