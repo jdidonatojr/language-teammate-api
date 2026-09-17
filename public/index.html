@@ -83,6 +83,8 @@
            and the slide translations, then plays the video
      v6.1: Skip pauses the welcome video (no more video + teacher
            speaking over each other)
+     v10.3: service worker always fetches the page fresh; version stamp with
+           "Update available" bar; ↻ refresh button in the bottom bar
      v10.2: Android share target — WhatsApp long-press -> Share -> Teammate opens
            the text tool with the message already pasted (remembers your language)
      v10.1: text translator keeps the conversation thread (context), knows who is
@@ -295,6 +297,12 @@
     white-space: nowrap;
   }
   .aila-copy-toast.show { display: block; }
+  .aila-update-bar {
+    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 21;
+    background: #f4b400; color: #1a1a1a; padding: 12px 18px; border-radius: 10px; font-size: 15px;
+    font-weight: 700; display: none; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.4); white-space: nowrap;
+  }
+  .aila-update-bar.show { display: block; }
   .aila-link-layer a:hover {
     outline: 2px solid rgba(26,115,232,0.7);
     background: rgba(26,115,232,0.12);
@@ -1443,6 +1451,8 @@
 <div class="aila-tr-status" id="ailaTrStatus"></div>
 </div>
 </div>
+<!-- UPDATE AVAILABLE BAR (v10.3) -->
+<div class="aila-update-bar" id="ailaUpdateBar">🔄 Update available — tap to refresh</div>
 <!-- COPIED! NOTE (click-to-copy a text block) -->
 <div class="aila-copy-toast" id="ailaCopyToast">Copied!</div>
 <!-- CONNECTION-LOST BANNER (v6.2) -->
@@ -1501,6 +1511,7 @@
 </select>
 <button class="aila-fs-button" id="ailaFsBtn">⛶ Full screen</button>
 <button class="aila-voice-button" id="ailaVoiceBtn">🔊 Start Course</button>
+<button class="aila-nav-button" id="ailaRefreshBtn" title="Refresh the app">↻</button>
 <button class="aila-sync-button" id="ailaSyncBtn">⟳ Sync to current slide</button>
 <button class="aila-quiz-button" id="ailaQuizBtn">🧠 Knowledge Check</button>
 <button class="aila-photo-button" id="ailaPhotoBtn">📷 Translate a photo</button>
@@ -1529,6 +1540,10 @@
 <script>
 (function() {
   'use strict';
+
+  // v10.3: version stamp. Bump this on every release; the app compares it
+  // with the copy on the server and offers a refresh when they differ.
+  var APP_VERSION = '10.3';
 
   // ============================================================
   // COURSE LIST
@@ -3746,6 +3761,34 @@
     if (el) el.textContent = "You'll only need to do this about once a week on this " +
                              (isPhone ? 'phone' : 'device') + '.';
   })();
+
+  // ============================================================
+  // REFRESH + UPDATE CHECK (v10.3)
+  // ============================================================
+  function hardReload() {
+    // A fresh copy from the server, not the phone's cache.
+    try {
+      fetch(location.pathname || '/', { cache: 'reload' }).catch(function() {}).then(function() { location.reload(); });
+    } catch (e) { location.reload(); }
+  }
+  document.getElementById('ailaRefreshBtn').addEventListener('click', hardReload);
+  document.getElementById('ailaUpdateBar').addEventListener('click', hardReload);
+
+  function checkForUpdate() {
+    if (location.protocol !== 'https:') return;
+    fetch('/index.html', { cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.text() : ''; })
+      .then(function(html) {
+        var m = html.match(/APP_VERSION = '([^']+)'/);
+        if (m && m[1] && m[1] !== APP_VERSION) {
+          document.getElementById('ailaUpdateBar').classList.add('show');
+        }
+      })
+      .catch(function() {});
+  }
+  checkForUpdate();
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) checkForUpdate(); });
+  setInterval(checkForUpdate, 10 * 60 * 1000);
 
   // ============================================================
   // ADD TO HOME SCREEN (v10.0)
