@@ -1,0 +1,3699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Language Teammate</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0f1523">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Teammate">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon-192.png">
+</head>
+<body>
+<!-- =====================================================
+     LANGUAGE TEAMMATE — COURSE PLAYER PAGE — PRODUCTION (/teammate/)
+     Cloned from the ESource /teacher/ page; every shared URL and key renamed
+     Multi-course version: reads ?course=N from URL
+     v2.1 + KEYSTONE: course list loaded from courses.json (GitHub)
+     v2.2: clickable slide links + video overlay
+     v2.3: audio links play in the overlay too
+     v2.4: quiz links open in the overlay (knowledge checks) + remedial slide jump
+     v2.5: automatic Knowledge Check button when a quiz file exists for the course
+     v2.6: tool pages open in overlay, pop-out button, unlisted Vimeo keys
+     v2.7: agent auto-starts on Begin/Skip (shadow-DOM click with retry)
+     v2.8: mobile layout — desktop-only block removed, phone-sized slides, rail hidden on phones
+     v2.9: slides re-fit on rotate/resize, full-screen mode with arrows, voice toggle button
+     v3.0: fake-fullscreen fallback for iPhone, smarter voice end-call detection
+     v3.1: touch fixes (no long-press selection on controls), state-aware Stop/Start Voice label
+     v3.2: rail hidden off-screen on phones (widget stays alive), expand-then-end stop fallback
+     v3.4: page tracks voice state itself — reliable Stop/Start Course label and toggle
+     v3.5: restart finds the widget's start/call button by label (works after a call has ended)
+     v3.6: document links from the agent are intercepted and offered in a banner over the slide
+     v4.0: 🌐 language layer — slides translate in place over the canvas (Claude-powered)
+     v4.1: Take Another Course removed; no-course page no longer lists the catalog
+     v4.2: course number masked from the address bar (read, stashed, and rewritten on load)
+     v4.3: admin peek (5-click on title), error message format hint removed
+     v4.5: email OTP access gate before the course loads
+     v4.6: image links (gif/png/jpg/webp) open in the overlay — animated GIFs play
+           over the slide, learner never leaves the course
+     v4.7: learner memory — the page passes the learner's email and course
+           number to the agent, fetches their saved profile at startup
+           (level, goal, last slide), reopens their last slide, and quietly
+           reports each slide turn to the profile store
+     v4.8: mic-permission patch — the page asks for the microphone the
+           moment "Begin the Course", "Skip", or "Start Course" is clicked
+           (while the click gesture is still fresh), so the browser reliably
+           shows the Allow popup and the widget's mic works
+     v4.9: click-to-copy — the link layer lets clicks pass through (text
+           can be selected again); clicking any text block copies just that
+           block (same left edge, top to bottom) and shows "Copied!"
+     v5.0: spoken language follows the 🌐 dropdown — the page sets the
+           agent's language override (and a translated greeting) before
+           each call; switching mid-course restarts the voice in the new
+           language (ElevenLabs can't change language mid-call)
+     v5.1: uniform translated fonts — lines that share a size on the
+           original slide are shrunk together, so translated slides no
+           longer show mixed font sizes within the same text block
+     v5.2: column-aware translation — side-by-side columns are split into
+           separate lines (wide gap = new column), so two-column slides
+           translate cleanly and keep all their arrows/bullets
+     v5.3: readable translations — lines use the real room to their right,
+           never shrink below 80% as a group, and word-wrap into empty
+           space below before shrinking any further
+     v5.4: cover-box color sampled from several spots around the text
+           (median), so underlines/rules no longer tint the cover box
+     v5.5: box-aware room — pixels are scanned right and down from the
+           text to find the edge of any box it sits in, so translations
+           stretch/wrap inside the box instead of spilling past it
+     v5.6: dashboard prep — profile store now also receives highest slide,
+           total slides, language, a session count, and the Knowledge
+           Check score (quiz.html posts it to the page)
+     v5.8: podcast links (Omny.fm episode pages) open in a slim embedded
+           player over the slide instead of a new tab
+     v5.9: advance_slide client tool — the agent turns the slide itself
+           the moment the learner confirms (any language); learner can
+           pause by simply not confirming or saying wait/hold on
+     v6.0: language gate — a centered chooser over the welcome video
+           (after the email code). One choice sets the video's subtitles
+           (Vimeo text track), the teacher's spoken language + greeting,
+           and the slide translations, then plays the video
+     v6.1: Skip pauses the welcome video (no more video + teacher
+           speaking over each other)
+     v10.0: installable app (PWA) — manifest, service worker, Add to Home Screen
+           button on the language popover until installed; hosted on Vercel
+     v9.3: text-message translator on the translator panel (paste theirs → my
+           language; type mine → their language; Copy); screenshot upload via
+           the photo library (iPhone); new /api/translate-text
+     v9.2: day progress remembered per language being learned (course + language pair)
+     v9.1: nav Start Course hidden on translator panel; Korean flag redrawn;
+           header shows "Translator" while translating
+     v9.0: three lean agents — translator / phrase / course — the page swaps the
+           widget to the right agent before each call (AGENT_IDS at the top of
+           the widget block)
+     v8.2: captions on by default for every language, including English
+     v8.1: "Watch how it works" button on the language popover; new welcome
+           video (1226303411); popover returns after the video without the button
+     v8.0: PHRASE-A-DAY mode — courses.json entries with "type": "phrase" open a
+           dark phrase card (learner language left, learning language right),
+           learn-language flag picker, day navigation, show_phrase + next_day
+           client tools; the agent gets start_mode=phrase, day, learning_lang
+     v7.6: no course number needed — /teammate/ opens as the translator;
+           a course list appears on "Start the course"; ?course=N still works;
+           gate says the code lasts about a week on this phone/device
+     v7.5: photo translation comes back in the traveler's chosen language
+     v7.4: YOUR / OTHER emphasis with swoosh; 'Open the translator' wording
+     v7.3: dark translator panel; second flag row replaces the dropdown;
+           Vietnamese removed (not supported by the agent)
+     v7.2: drawn SVG flags with names (Windows has no flag emoji)
+     v7.1: TRANSLATOR FIRST — the language chooser offers "Translate now";
+           a translator panel (8 flags with names + more-languages list,
+           Ready to translate, camera, Start the course) replaces the
+           slides until the traveler asks for the course. The page sends
+           start_mode and target_lang to the agent. Email pass lasts 7 days.
+     v7.0: LANGUAGE TEAMMATE clone — own repo, own Vercel project, own
+           agent, own storage keys; photo translator (camera button ->
+           /api/translate-photo -> English text over the slide)
+     v6.2: connection watch — if the voice session drops mid-course, a
+           red Reconnect banner appears; one click starts a fresh session
+           and learner memory steers the teacher back to the same slide
+     ===================================================== -->
+<!-- Hide Yola's default cookie banner on this page -->
+<style>
+  #cookie-banner, .cookie-banner,
+  #cookie-consent, .cookie-consent {
+    display: none !important;
+  }
+
+  /* === Dock the ElevenLabs widget inside the right rail === */
+  .aila-widget-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 500px;
+  }
+
+  .aila-widget-wrapper elevenlabs-convai {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* ========== PAGE LAYOUT ========== */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    font-family: system-ui, -apple-system, Arial, sans-serif;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  /* The full-page container holds the main stage and the right rail side-by-side */
+  .aila-player {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+  }
+
+  /* MAIN STAGE: where the welcome video, then the slides, are displayed */
+  .aila-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    padding: 16px;
+    box-sizing: border-box;
+    background: #f5f5f7;
+    min-width: 0;
+  }
+
+  /* Small course identifier in upper-left of the stage */
+  .aila-course-label {
+    font-size: 18px;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  /* The display area that holds either the video or the PDF */
+  .aila-display {
+    flex: 1;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  }
+
+  /* The Vimeo welcome video container */
+  .aila-video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+  }
+  .aila-video-container iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  /* The PDF viewer container — hidden initially, shown after welcome video ends */
+  .aila-pdf-container {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  /* Page wrapper holds the canvas + the invisible selectable text layer,
+     both sized to the same viewport so selection lines up with the slide */
+  .aila-pdf-page {
+    position: relative;
+  }
+  .aila-pdf-canvas {
+    display: block;
+  }
+  /* ===== PDF.js selectable text layer (lets learners copy prompts) ===== */
+  .textLayer {
+    position: absolute;
+    text-align: initial;
+    inset: 0;
+    overflow: hidden;
+    opacity: .75;
+    line-height: 1;
+    text-size-adjust: none;
+    forced-color-adjust: none;
+    transform-origin: 0 0;
+    z-index: 2;
+  }
+  .textLayer :is(span, br) {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+  }
+  .textLayer span.markedContent {
+    top: 0;
+    height: 0;
+  }
+  .textLayer ::selection {
+    background: rgba(255, 230, 0, 0.7);
+  }
+  .textLayer br::selection {
+    background: transparent;
+  }
+  /* ===== Clickable link layer (links carried over from the slides) ===== */
+  .aila-link-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .aila-link-layer a {
+    position: absolute;
+    display: block;
+    pointer-events: auto;
+  }
+  /* "Copied!" note (click-to-copy a text block) */
+  .aila-copy-toast {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 19;
+    background: #1a1a1a;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .aila-copy-toast.show { display: block; }
+  .aila-link-layer a:hover {
+    outline: 2px solid rgba(26,115,232,0.7);
+    background: rgba(26,115,232,0.12);
+    border-radius: 3px;
+  }
+
+  /* ===== Video overlay (plays video links over the slide) ===== */
+  .aila-video-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+  .aila-video-overlay.open { display: flex; }
+  .aila-video-overlay-box {
+    position: relative;
+    width: 80%;
+    max-width: 960px;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 8px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .aila-video-overlay-box iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 8px;
+  }
+  /* Audio version of the overlay box: a slim white player bar */
+  .aila-video-overlay-box.audio {
+    aspect-ratio: auto;
+    height: 90px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    box-sizing: border-box;
+  }
+  .aila-video-overlay-box audio {
+    width: 100%;
+    display: none;
+  }
+  .aila-video-overlay-box.audio audio {
+    display: block;
+  }
+  .aila-video-overlay-box.audio iframe {
+    display: none;
+  }
+  /* Quiz / form version of the overlay box: tall white panel */
+  .aila-video-overlay-box.form {
+    aspect-ratio: auto;
+    width: 86%;
+    height: 88%;
+    max-width: 900px;
+    background: #fff;
+  }
+  .aila-video-overlay-box.form iframe {
+    display: block;
+  }
+  .aila-video-overlay-box.form audio {
+    display: none;
+  }
+  /* Podcast version of the overlay box: slim embedded player (Omny etc.) */
+  .aila-video-overlay-box.podcast {
+    aspect-ratio: auto;
+    width: 80%;
+    max-width: 960px;
+    height: 200px;
+    background: transparent;
+    box-shadow: none;
+  }
+  .aila-video-overlay-box.podcast iframe {
+    display: block;
+    height: 100%;
+    border-radius: 8px;
+  }
+  .aila-video-overlay-box.podcast audio,
+  .aila-video-overlay-box.podcast img { display: none; }
+  /* Image version of the overlay box: picture (or animated GIF) over the slide */
+  .aila-video-overlay-box.image {
+    aspect-ratio: auto;
+    width: auto;
+    max-width: 92%;
+    max-height: 88%;
+    background: transparent;
+    box-shadow: none;
+  }
+  .aila-video-overlay-box img {
+    display: none;
+    max-width: 100%;
+    max-height: 84vh;
+    border-radius: 8px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .aila-video-overlay-box.image img { display: block; }
+  .aila-video-overlay-box.image iframe,
+  .aila-video-overlay-box.image audio { display: none; }
+  /* Photo-translation version of the overlay box (v7.0) */
+  .aila-video-overlay-box.photo {
+    aspect-ratio: auto;
+    width: 86%;
+    max-width: 760px;
+    max-height: 86%;
+    background: #fff;
+    padding: 20px 22px;
+    box-sizing: border-box;
+    overflow: auto;
+  }
+  .aila-video-overlay-box.photo iframe,
+  .aila-video-overlay-box.photo audio,
+  .aila-video-overlay-box.photo img { display: none; }
+  .aila-photo-text {
+    display: none;
+    white-space: pre-wrap;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #1a1a1a;
+    font-family: system-ui, -apple-system, Arial, sans-serif;
+  }
+  .aila-video-overlay-box.photo .aila-photo-text { display: block; }
+  .aila-photo-copy {
+    display: none;
+    margin-top: 14px;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .aila-video-overlay-box.photo .aila-photo-copy { display: inline-block; }
+  .aila-photo-button {
+    background: #6f42c1;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .aila-photo-button:hover { background: #59359a; }
+  .aila-photo-button:disabled { opacity: 0.5; cursor: wait; }
+  .aila-video-overlay-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fff;
+    color: #333;
+    border: none;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    line-height: 1;
+  }
+  .textLayer .endOfContent {
+    display: block;
+    position: absolute;
+    inset: 100% 0 0;
+    z-index: -1;
+    cursor: default;
+    user-select: none;
+  }
+
+  /* "Begin the Course" button overlay — appears when video ends */
+  .aila-begin-overlay {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    z-index: 10;
+  }
+  .aila-begin-button {
+    background: #1a73e8;
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(26,115,232,0.4);
+  }
+  .aila-begin-button:hover {
+    background: #1557b0;
+  }
+
+  /* Skip link in upper-right of video (for returning learners) */
+  .aila-skip-link {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: #fff;
+    background: rgba(0,0,0,0.6);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    z-index: 10;
+    text-decoration: none;
+  }
+  .aila-skip-link:hover {
+    background: rgba(0,0,0,0.85);
+  }
+
+  /* Slide navigation controls — appear below the display when slides are showing */
+  .aila-nav {
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .aila-nav button, .aila-nav select,
+  .aila-fs-arrow, .aila-fs-exit,
+  .aila-begin-button, .aila-skip-link,
+  .aila-video-overlay-close {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .aila-nav-button {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #333;
+  }
+  .aila-nav-button:hover {
+    background: #f0f0f0;
+  }
+  .aila-nav-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .aila-slide-indicator {
+    font-size: 14px;
+    color: #555;
+    min-width: 110px;
+    text-align: center;
+  }
+  .aila-section-jump {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .aila-sync-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .aila-sync-button:hover {
+    background: #218838;
+  }
+
+  /* "Knowledge Check" button — appears only when this course has a quiz */
+  .aila-quiz-button {
+    background: #e8710a;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    display: none;
+  }
+  .aila-quiz-button:hover {
+    background: #c65f06;
+  }
+
+  /* Document-ready banner (appears when the agent saves a document) */
+  .aila-doc-toast {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 18;
+    background: #1a7f37;
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px 10px 16px;
+    font-size: 14px;
+    max-width: 92%;
+  }
+  .aila-doc-toast.show { display: flex; }
+  .aila-doc-toast button {
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 8px 14px;
+  }
+  .aila-doc-open { background: #fff; color: #1a7f37; }
+  /* Connection-lost banner (v6.2) */
+  .aila-reconn-toast {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 19;
+    background: #b42318;
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px 10px 16px;
+    font-size: 14px;
+    max-width: 92%;
+  }
+  .aila-reconn-toast.show { display: flex; }
+  .aila-reconn-toast button {
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 8px 14px;
+    background: #fff;
+    color: #b42318;
+  }
+  .aila-doc-dismiss { background: transparent; color: #fff; font-size: 16px; padding: 4px 6px; }
+
+  /* "Full screen" button + in-fullscreen arrow controls */
+  .aila-fs-button {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #333;
+  }
+  .aila-fs-button:hover { background: #f0f0f0; }
+  .aila-fs-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 15;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    font-size: 26px;
+    cursor: pointer;
+    display: none;
+    line-height: 1;
+  }
+  .aila-fs-arrow:hover { background: rgba(0,0,0,0.7); }
+  .aila-fs-prev { left: 12px; }
+  .aila-fs-next { right: 12px; }
+  .aila-fs-exit {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 15;
+    border: none;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    font-size: 15px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: none;
+  }
+  .aila-display.fs-active .aila-fs-arrow,
+  .aila-display.fs-active .aila-fs-exit { display: block; }
+  .aila-display.fs-active { background: #000; }
+  /* Fake fullscreen (iPhone fallback): pin the slide area over the page */
+  .aila-display.fs-fake {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1000;
+    border-radius: 0;
+  }
+
+  /* "Voice" toggle — presses the hidden widget's button (start/end call) */
+  .aila-voice-button {
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .aila-voice-button:hover { background: #1557b0; }
+
+  /* RIGHT RAIL: the ElevenLabs widget and surrounding affordances */
+  .aila-rail {
+    width: 360px;
+    height: 100vh;
+    background: #fafafa;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    padding: 0px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* The pulsing activation cue — visible until the learner starts a call */
+  .aila-activation-cue {
+    text-align: center;
+    color: #1a73e8;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px;
+    background: rgba(26,115,232,0.08);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    animation: aila-pulse 2s infinite;
+  }
+  @keyframes aila-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* The ElevenLabs widget wrapper */
+  .aila-widget-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .aila-widget-wrapper elevenlabs-convai {
+    width: 100%;
+    display: block;
+  }
+
+  /* ========== MOBILE LAYOUT (phones and small tablets) ==========
+     The rail (agent widget) is hidden — the instructor auto-starts on
+     "Begin the Course", so the voice works with no visible widget. */
+  @media screen and (max-width: 900px) {
+    /* Hide the rail by moving it off-screen (NOT display:none) so the
+       widget keeps rendering its buttons and the Stop control works. */
+    .aila-rail {
+      position: fixed;
+      left: -10000px;
+      top: 0;
+      width: 360px;
+      border-left: none;
+    }
+    .aila-stage { padding: 8px; }
+    .aila-course-label { font-size: 14px; margin-bottom: 6px; }
+    .aila-nav { gap: 8px; margin-top: 8px; }
+    .aila-nav-button, .aila-sync-button,
+    .aila-quiz-button, .aila-section-jump {
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+    .aila-slide-indicator { font-size: 13px; min-width: 80px; }
+    .aila-skip-link { font-size: 12px; padding: 5px 10px; }
+    .aila-begin-button { padding: 12px 24px; font-size: 16px; }
+    .aila-video-overlay-box { width: 94%; }
+    .aila-video-overlay-box.form { width: 96%; height: 92%; }
+    .aila-video-overlay-box.image { max-width: 96%; max-height: 84%; }
+    .aila-video-overlay-close { top: -10px; right: -6px; }
+  }
+
+  /* ========== PHRASE-A-DAY PANEL (v8.0) ========== */
+  .aila-phrase {
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 20%, #1e2a44 0%, #0f1523 70%);
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12px;
+    box-sizing: border-box;
+    overflow: auto;
+  }
+  .aila-phrase.show { display: flex; }
+  .aila-ph-card { width: min(640px, 100%); text-align: center; color: #e6ebf5; }
+  .aila-ph-card h2 { margin: 0 0 2px 0; font-size: 20px; color: #fff; }
+  .aila-ph-day { font-size: 14px; color: #aab4c8; margin-bottom: 8px; }
+  .aila-ph-bar { height: 6px; background: #223052; border-radius: 3px; overflow: hidden; margin: 0 auto 14px; }
+  .aila-ph-bar div { height: 100%; width: 0; background: #4f8ef7; transition: width .3s; }
+  .aila-ph-icon { font-size: 44px; line-height: 1; margin: 6px 0 10px; }
+  .aila-ph-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .aila-ph-col { background: #1b2438; border: 2px solid #2c3a57; border-radius: 12px; padding: 12px 10px; min-height: 92px; }
+  .aila-ph-col.target { border-color: #ffd166; }
+  .aila-ph-label { font-size: 12px; color: #aab4c8; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .aila-ph-text { font-size: 20px; font-weight: 700; color: #fff; line-height: 1.3; }
+  .aila-ph-col.target .aila-ph-text { color: #ffd166; }
+  .aila-ph-use { font-size: 14px; color: #d4dcec; margin: 12px 4px 0; line-height: 1.5; }
+  .aila-ph-culture { font-size: 13px; color: #cfe3ff; background: #1a2f55; border-radius: 10px; padding: 10px 12px; margin: 10px 0 0; line-height: 1.5; text-align: left; }
+  .aila-ph-reply { font-size: 13px; color: #aab4c8; margin-top: 10px; line-height: 1.5; }
+  .aila-ph-reply b { color: #e6ebf5; }
+  .aila-ph-say {
+    display: none;
+    margin: 14px 0 0;
+    background: #10233f;
+    border: 2px dashed #4f8ef7;
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .aila-ph-say.show { display: block; }
+  .aila-ph-say .aila-ph-label { color: #8fb4ff; }
+  .aila-ph-say .a { font-size: 17px; color: #fff; margin-bottom: 4px; }
+  .aila-ph-say .b { font-size: 22px; font-weight: 700; color: #ffd166; }
+  .aila-ph-practice {
+    width: 100%;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    padding: 16px;
+    font-size: 19px;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    margin: 14px 0 8px;
+    box-shadow: 0 4px 14px rgba(26,115,232,0.4);
+  }
+  .aila-ph-practice:hover { background: #1557b0; }
+  .aila-ph-practice.live { background: #b42318; box-shadow: 0 4px 14px rgba(180,35,24,0.35); }
+  .aila-ph-row { display: flex; gap: 8px; }
+  .aila-ph-row button {
+    flex: 1; border: none; padding: 11px 6px; font-size: 14px; font-weight: 600;
+    border-radius: 10px; cursor: pointer; color: #fff; background: #2c3a57;
+  }
+  .aila-ph-row button:hover { background: #3a4a6b; }
+  .aila-ph-row button:disabled { opacity: .4; cursor: not-allowed; }
+  .aila-ph-row .tr { background: #6f42c1; }
+  .aila-ph-learn { font-size: 13px; color: #aab4c8; margin-top: 8px; }
+  .aila-ph-learn a { color: #8fb4ff; cursor: pointer; text-decoration: underline; }
+  .aila-ph-status { min-height: 18px; font-size: 13px; color: #8fb4ff; margin-top: 8px; }
+  /* Learn-language picker (inside the phrase panel) */
+  .aila-ph-pick { display: none; }
+  .aila-ph-pick.show { display: block; }
+  .aila-ph-pick .aila-tr-sub { margin-bottom: 12px; }
+  .aila-ph-body { display: none; }
+  .aila-ph-body.show { display: block; }
+  .aila-player.phrase-mode #ailaPrevBtn,
+  .aila-player.phrase-mode #ailaNextBtn,
+  .aila-player.phrase-mode #ailaSlideIndicator,
+  .aila-player.phrase-mode #ailaSectionJump,
+  .aila-player.phrase-mode #ailaFsBtn,
+  .aila-player.phrase-mode #ailaSyncBtn,
+  .aila-player.phrase-mode #ailaQuizBtn,
+  .aila-player.phrase-mode #ailaPhotoBtn,
+  .aila-player.phrase-mode #ailaVoiceBtn { display: none !important; }
+
+  /* ========== TRANSLATOR PANEL (v7.1) — shown instead of the slides ========== */
+  .aila-translator {
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 30%, #1e2a44 0%, #0f1523 70%);
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    box-sizing: border-box;
+    overflow: auto;
+  }
+  .aila-translator.show { display: flex; }
+  .aila-tr-card {
+    width: min(560px, 100%);
+    text-align: center;
+  }
+  .aila-tr-card h2 { margin: 0 0 4px 0; font-size: 24px; color: #fff; }
+  .aila-tr-sub { margin: 0 0 18px 0; font-size: 15px; color: #d4dcec; line-height: 1.6; }
+  .aila-flags {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 0 auto;
+  }
+  .aila-flag {
+    background: #1b2438;
+    border: 2px solid #2c3a57;
+    border-radius: 12px;
+    padding: 10px 4px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .aila-flag .aila-flag-pic { font-size: 30px; line-height: 1; display: block; }
+  /* Drawn flags (v7.2): same look on every device. Rounded rectangles;
+     for circles change the border-radius below to 50% and height to 36px. */
+  .aila-flag svg.aila-flag-pic {
+    width: 54px;
+    height: 36px;
+    display: block;
+    margin: 0 auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  }
+  .aila-flag .aila-flag-name { font-size: 13px; color: #e6ebf5; display: block; margin-top: 5px; font-weight: 500; }
+  .aila-flag:hover { border-color: #4f8ef7; }
+  .aila-flag.on { border-color: #4f8ef7; background: #223a6b; box-shadow: 0 0 0 3px rgba(79,142,247,0.35); }
+  .aila-flags-more { display: none; margin-top: 8px; }
+  .aila-flags-more.show { display: grid; }
+  .aila-tr-moretoggle {
+    width: 100%;
+    background: transparent;
+    color: #aab4c8;
+    border: 1px dashed #3a4a6b;
+    border-radius: 8px;
+    padding: 9px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .aila-tr-moretoggle:hover { color: #fff; border-color: #6d84b3; }
+  .aila-tr-more {
+    width: 100%;
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    margin: 10px 0 6px;
+  }
+  .aila-tr-ready {
+    width: 100%;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    padding: 18px;
+    font-size: 20px;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    margin: 8px 0 10px;
+    box-shadow: 0 4px 14px rgba(26,115,232,0.4);
+  }
+  .aila-tr-ready:hover { background: #1557b0; }
+  .aila-tr-ready.live { background: #b42318; box-shadow: 0 4px 14px rgba(180,35,24,0.35); }
+  .aila-tr-row { display: flex; gap: 8px; }
+  .aila-tr-row button {
+    flex: 1;
+    border: none;
+    padding: 12px 8px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    color: #fff;
+  }
+  .aila-tr-photo { background: #6f42c1; }
+  .aila-tr-photo:hover { background: #59359a; }
+  .aila-tr-photo:disabled { opacity: 0.5; cursor: wait; }
+  .aila-tr-course { background: #28a745; }
+  .aila-tr-course:hover { background: #218838; }
+  .aila-tr-status { min-height: 20px; font-size: 14px; color: #8fb4ff; margin-top: 10px; }
+  /* Text-message translator (v9.3) */
+  .aila-tr-text-btn {
+    width: 100%; margin-top: 8px; background: #2c3a57; color: #e6ebf5; border: 1px solid #3a4a6b;
+    border-radius: 10px; padding: 11px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .aila-tr-text-btn:hover { background: #3a4a6b; }
+  .aila-tr-text { display: none; margin-top: 10px; background: #1b2438; border: 2px solid #2c3a57;
+    border-radius: 12px; padding: 12px; text-align: left; }
+  .aila-tr-text.show { display: block; }
+  .aila-tr-text-dir { display: flex; gap: 6px; margin-bottom: 8px; }
+  .aila-tr-text-dir button { flex: 1; background: #10233f; color: #aab4c8; border: 1px solid #2c3a57;
+    border-radius: 8px; padding: 8px 4px; font-size: 12px; cursor: pointer; }
+  .aila-tr-text-dir button.on { background: #223a6b; color: #fff; border-color: #4f8ef7; }
+  .aila-tr-text textarea { width: 100%; box-sizing: border-box; background: #0f1523; color: #fff;
+    border: 1px solid #3a4a6b; border-radius: 8px; padding: 10px; font-size: 15px; font-family: inherit; resize: vertical; }
+  .aila-tr-text-row { display: flex; gap: 8px; margin-top: 8px; }
+  .aila-tr-text-row .go { flex: 1; background: #1a73e8; color: #fff; border: none; border-radius: 8px;
+    padding: 11px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .aila-tr-text-row .go:disabled { opacity: .5; cursor: wait; }
+  .aila-tr-text-row .alt { flex: 1; background: transparent; color: #aab4c8; border: 1px dashed #3a4a6b;
+    border-radius: 8px; padding: 11px 6px; font-size: 13px; cursor: pointer; }
+  .aila-tr-text-out { margin-top: 10px; background: #10233f; border: 2px dashed #4f8ef7; border-radius: 10px; padding: 10px 12px; }
+  .aila-tr-text-label { font-size: 12px; color: #8fb4ff; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .aila-tr-text-out #ailaTxtOut { font-size: 17px; color: #fff; line-height: 1.45; white-space: pre-wrap; }
+  .aila-tr-text-out .copy { margin-top: 8px; background: #6f42c1; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  /* While translating, the slide controls make no sense — hide them. */
+  .aila-player.translator-mode #ailaPrevBtn,
+  .aila-player.translator-mode #ailaNextBtn,
+  .aila-player.translator-mode #ailaSlideIndicator,
+  .aila-player.translator-mode #ailaSectionJump,
+  .aila-player.translator-mode #ailaFsBtn,
+  .aila-player.translator-mode #ailaSyncBtn,
+  .aila-player.translator-mode #ailaQuizBtn,
+  .aila-player.translator-mode #ailaPhotoBtn,
+  .aila-player.translator-mode #ailaVoiceBtn { display: none !important; }
+  .aila-lang-translate {
+    width: 100%;
+    background: #28a745;
+    color: #fff;
+    border: none;
+    padding: 15px;
+    font-size: 17px;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .aila-lang-translate:hover { background: #218838; }
+  .aila-lang-or { font-size: 13px; color: #888; margin: 0 0 8px 0; }
+  /* Install nudge (v10.0) */
+  .aila-install { display: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; }
+  .aila-install.show { display: block; }
+  .aila-install-btn {
+    width: 100%; background: #0f1523; color: #ffd166; border: none; border-radius: 8px;
+    padding: 13px; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .aila-install-btn:hover { background: #1e2a44; }
+  .aila-install-later { display: block; margin-top: 8px; font-size: 13px; color: #888; cursor: pointer; text-decoration: underline; }
+  .aila-install-steps { margin: 0 0 16px 0; padding-left: 22px; font-size: 15px; color: #333; line-height: 1.6; }
+  .aila-lang-video {
+    width: 100%;
+    background: #f4b400;
+    color: #1a1a1a;
+    border: none;
+    padding: 15px;
+    font-size: 17px;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .aila-lang-video:hover { background: #d99e00; }
+  .aila-lang-gate.seen .aila-lang-video { display: none; }
+  .aila-course-choice {
+    display: block;
+    width: 100%;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .aila-course-choice:hover { background: #1557b0; }
+
+  /* Emphasis word with a hand-drawn swoosh underneath (v7.4) */
+  .aila-swoosh {
+    position: relative;
+    display: inline-block;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 0 2px;
+  }
+  .aila-swoosh svg {
+    position: absolute;
+    left: -4%;
+    bottom: -0.35em;
+    width: 108%;
+    height: 0.5em;
+    pointer-events: none;
+  }
+  .aila-lang-card .aila-swoosh { color: #1a73e8; }
+  .aila-tr-card .aila-swoosh { color: #ffd166; }
+
+  /* ========== LANGUAGE GATE (v6.0) — centered chooser over the video ========== */
+  .aila-lang-gate {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.62);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+  }
+  .aila-lang-gate.hidden { display: none; }
+  .aila-lang-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 28px 30px;
+    width: min(400px, 88%);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    text-align: center;
+  }
+  .aila-lang-card h2 { margin: 0 0 6px 0; font-size: 20px; color: #1a1a1a; }
+  .aila-lang-card p { margin: 0 0 16px 0; font-size: 14px; color: #666; }
+  .aila-lang-card select {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    background: #fff;
+  }
+  .aila-lang-go {
+    width: 100%;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    padding: 13px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .aila-lang-go:hover { background: #1557b0; }
+
+  /* ========== ACCESS GATE (email OTP) ========== */
+  .aila-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: #f5f5f7;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .aila-gate.show { display: flex; }
+  .aila-gate-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 36px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  .aila-gate-card h1 { color: #1a1a1a; font-size: 22px; margin: 0 0 8px 0; }
+  .aila-gate-card p { color: #555; font-size: 15px; margin: 0 0 18px 0; line-height: 1.5; }
+  .aila-gate-card input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .aila-gate-card button {
+    width: 100%;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    padding: 13px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .aila-gate-card button:hover { background: #1557b0; }
+  .aila-gate-card button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .aila-gate-note { min-height: 20px; font-size: 14px; color: #555; margin-top: 12px; }
+  .aila-gate-note.err { color: #b42318; }
+  .aila-gate-back { background: none !important; color: #1a73e8 !important;
+    font-size: 14px !important; padding: 6px !important; margin-top: 6px; font-weight: 500 !important; }
+
+  /* ========== ERROR PAGE (no course in URL) ========== */
+  .aila-error-page {
+    display: none;
+    height: 100vh;
+    width: 100vw;
+    background: #f5f5f7;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .aila-error-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 540px;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  .aila-error-card h1 {
+    color: #1a1a1a;
+    font-size: 24px;
+    margin: 0 0 12px 0;
+  }
+  .aila-error-card p {
+    color: #555;
+    font-size: 16px;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+  }
+  .aila-course-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+  }
+  .aila-course-list li {
+    margin-bottom: 12px;
+  }
+  .aila-course-list a {
+    display: block;
+    padding: 16px 20px;
+    background: #1a73e8;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+  .aila-course-list a:hover {
+    background: #1557b0;
+  }
+</style>
+<!-- ========== ACCESS GATE (email OTP) ========== -->
+<div class="aila-gate" id="ailaGate">
+<div class="aila-gate-card">
+<h1>Course access</h1>
+<div id="ailaGateStep1">
+<p>Enter your email address and we'll send you a one-time access code. <span id="ailaGateOnce">You'll only need to do this about once a week on this device.</span></p>
+<input type="email" id="ailaGateEmail" placeholder="you@company.com" autocomplete="email">
+<button id="ailaGateSend">Send my code</button>
+</div>
+<div id="ailaGateStep2" style="display:none;">
+<p>Enter the 6-digit code we emailed you. It's valid for about 10 minutes.</p>
+<input type="text" id="ailaGateCode" placeholder="6-digit code" inputmode="numeric" maxlength="6">
+<button id="ailaGateVerify">Enter the course</button>
+<button class="aila-gate-back" id="ailaGateBack">← Use a different email</button>
+</div>
+<div class="aila-gate-note" id="ailaGateNote"></div>
+</div>
+</div>
+<!-- ========== ERROR PAGE (shown when no ?course=N in URL) ========== -->
+<div class="aila-error-page" id="ailaErrorPage">
+<div class="aila-error-card">
+<h1>Course link needed</h1>
+<p>Please open this page using the course link you were given. If you don't have one, contact the person who invited you to the course.</p>
+</div>
+</div>
+<!-- ========== MAIN PLAYER LAYOUT ========== -->
+<div class="aila-player" id="ailaPlayer" style="display:none;">
+<!-- LEFT/CENTER: the main stage -->
+<div class="aila-stage">
+<!-- Small course identifier in upper-left -->
+<div class="aila-course-label" id="ailaCourseLabel">
+      Loading course...
+    </div>
+<!-- The display area: video first, then PDF -->
+<div class="aila-display">
+<!-- VIMEO WELCOME VIDEO (shown first) -->
+<div class="aila-video-container" id="ailaVideoContainer">
+<a class="aila-skip-link" href="#" id="ailaSkipLink">Skip welcome ▶</a>
+<!-- LANGUAGE GATE (v6.0): one choice sets subtitles, the teacher's voice, the greeting, and the slides -->
+<div class="aila-lang-gate" id="ailaLangGate">
+<div class="aila-lang-card">
+<h2>🌐 Choose <span class="aila-swoosh">YOUR<svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 C 25 12, 60 1, 98 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span> language</h2>
+<p>The language <strong>you</strong> speak. Your teammate talks to you, and the slides show, in this language.</p>
+<select id="ailaLangSelectGate">
+<option value="en" selected="">English (original)</option>
+<option value="es">Español</option>
+<option value="fr">Français</option>
+<option value="de">Deutsch</option>
+<option value="pt">Português</option>
+<option value="it">Italiano</option>
+<option value="nl">Nederlands</option>
+<option value="pl">Polski</option>
+<option value="tr">Türkçe</option>
+<option value="ru">Русский</option>
+<option value="ja">日本語</option>
+<option value="zh">中文（简体）</option>
+<option value="ko">한국어</option>
+<option value="hi">हिन्दी</option>
+<option value="ar">العربية</option>
+</select>
+<button class="aila-lang-translate" id="ailaLangTranslate">🗣 Open the translator</button>
+<button class="aila-lang-video" id="ailaLangVideo">▶ Watch how it works (1 min)</button>
+<button class="aila-lang-go" id="ailaLangGo">📚 Start the course ▸</button>
+<div class="aila-install" id="ailaInstall">
+<button class="aila-install-btn" id="ailaInstallBtn">📲 Add to Home Screen</button>
+<a class="aila-install-later" id="ailaInstallLater">Not now</a>
+</div>
+</div>
+</div>
+<iframe allow="autoplay; fullscreen; picture-in-picture" frameborder="0" id="ailaWelcomeVideo" src="https://player.vimeo.com/video/1226303411?badge=0&amp;autopause=0&amp;player_id=ailaWelcomeVideo&amp;app_id=58479" title="Welcome video">
+</iframe>
+<!-- "Begin the Course" button — revealed when video ends -->
+<div class="aila-begin-overlay" id="ailaBeginOverlay">
+<button class="aila-begin-button" id="ailaBeginButton">
+            Begin the Course
+          </button>
+</div>
+</div>
+<!-- PDF VIEWER (hidden until video ends) -->
+<div class="aila-pdf-container" id="ailaPdfContainer">
+<div class="aila-pdf-page" id="ailaPdfPage">
+<canvas class="aila-pdf-canvas" id="ailaPdfCanvas"></canvas>
+<div class="textLayer" id="ailaTextLayer"></div>
+<div class="aila-link-layer" id="ailaLinkLayer"></div>
+</div>
+</div>
+<!-- INSTALL HOW-TO (v10.0) — iPhone has no install button, so we show the steps -->
+<div class="aila-lang-gate hidden" id="ailaInstallSheet" style="z-index:33;">
+<div class="aila-lang-card" style="text-align:left;">
+<h2 style="text-align:center;">📲 Add to Home Screen</h2>
+<ol class="aila-install-steps" id="ailaInstallSteps"></ol>
+<button class="aila-lang-go" id="ailaInstallDone">Got it</button>
+</div>
+</div>
+<!-- COURSE PICKER (v7.6) — shown when "Start the course" is tapped with no course chosen -->
+<div class="aila-lang-gate hidden" id="ailaCoursePick" style="z-index:32;">
+<div class="aila-lang-card">
+<h2>📚 Pick a course</h2>
+<p>Which language would you like to learn?</p>
+<div id="ailaCourseList"></div>
+<button class="aila-gate-back" id="ailaCourseCancel">← Not now</button>
+</div>
+</div>
+<!-- PHRASE-A-DAY PANEL (v8.0) -->
+<div class="aila-phrase" id="ailaPhrase">
+<div class="aila-ph-card">
+<h2 id="ailaPhTitle">📚 Phrase of the day</h2>
+<div class="aila-ph-pick" id="ailaPhPick">
+<p class="aila-tr-sub">Which language do you want to <span class="aila-swoosh">LEARN<svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 C 25 12, 60 1, 98 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span>?</p>
+<div class="aila-flags" id="ailaLearnFlags"></div>
+</div>
+<div class="aila-ph-body" id="ailaPhBody">
+<div class="aila-ph-day" id="ailaPhDay">Day 1 of 30</div>
+<div class="aila-ph-bar"><div id="ailaPhBar"></div></div>
+<div class="aila-ph-icon" id="ailaPhIcon">👋</div>
+<div class="aila-ph-cols">
+<div class="aila-ph-col"><div class="aila-ph-label" id="ailaPhLeftLabel">In your language</div><div class="aila-ph-text" id="ailaPhLeft">…</div></div>
+<div class="aila-ph-col target"><div class="aila-ph-label" id="ailaPhRightLabel">In Italian</div><div class="aila-ph-text" id="ailaPhRight">…</div></div>
+</div>
+<div class="aila-ph-use" id="ailaPhUse"></div>
+<div class="aila-ph-culture" id="ailaPhCulture" style="display:none;"></div>
+<div class="aila-ph-reply" id="ailaPhReply"></div>
+<div class="aila-ph-say" id="ailaPhSay"><div class="aila-ph-label">Now say this</div><div class="a" id="ailaPhSayA"></div><div class="b" id="ailaPhSayB"></div></div>
+<button class="aila-ph-practice" id="ailaPhPractice">🎤 Practice with your teammate</button>
+<div class="aila-ph-row">
+<button id="ailaPhPrev">◂ Previous day</button>
+<button id="ailaPhNext">Next day ▸</button>
+<button class="tr" id="ailaPhTranslator">🗣 Translator</button>
+</div>
+<div class="aila-ph-learn">Learning <b id="ailaPhLearnName">Italian</b> · <a id="ailaPhChange">change</a></div>
+<div class="aila-ph-status" id="ailaPhStatus"></div>
+</div>
+</div>
+</div>
+<!-- TRANSLATOR PANEL (v7.1) -->
+<div class="aila-translator" id="ailaTranslator">
+<div class="aila-tr-card">
+<h2>🗣 Translator</h2>
+<p class="aila-tr-sub">Now tap the language the <span class="aila-swoosh">OTHER<svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 C 25 12, 60 1, 98 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span> person speaks — or leave it on Detect.</p>
+<div class="aila-flags" id="ailaFlags">
+<button class="aila-flag on" data-lang="auto"><span class="aila-flag-pic">🌐</span><span class="aila-flag-name">Detect</span></button>
+<button class="aila-flag" data-lang="Italian"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce2b37"/></svg><span class="aila-flag-name">Italian</span></button>
+<button class="aila-flag" data-lang="Spanish"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="40" fill="#c60b1e"/><rect y="10" width="60" height="20" fill="#ffc400"/></svg><span class="aila-flag-name">Spanish</span></button>
+<button class="aila-flag" data-lang="French"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="20" height="40" fill="#0055a4"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ef4135"/></svg><span class="aila-flag-name">French</span></button>
+<button class="aila-flag" data-lang="German"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="13.4" fill="#000"/><rect y="13.3" width="60" height="13.4" fill="#dd0000"/><rect y="26.6" width="60" height="13.4" fill="#ffce00"/></svg><span class="aila-flag-name">German</span></button>
+<button class="aila-flag" data-lang="Portuguese"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="24" height="40" fill="#006600"/><rect x="24" width="36" height="40" fill="#ff0000"/><circle cx="24" cy="20" r="8" fill="#ffe000" stroke="#006600" stroke-width="1.5"/><circle cx="24" cy="20" r="4.5" fill="#ff0000" stroke="#fff" stroke-width="1"/></svg><span class="aila-flag-name">Portuguese</span></button>
+<button class="aila-flag" data-lang="Japanese"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="12" fill="#bc002d"/></svg><span class="aila-flag-name">Japanese</span></button>
+<button class="aila-flag" data-lang="Chinese"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="40" fill="#de2910"/><polygon points="10,6 12.4,13.2 20,13.2 13.8,17.6 16.2,24.8 10,20.4 3.8,24.8 6.2,17.6 0,13.2 7.6,13.2" fill="#ffde00"/><circle cx="22" cy="5" r="1.6" fill="#ffde00"/><circle cx="26" cy="9" r="1.6" fill="#ffde00"/><circle cx="26" cy="15" r="1.6" fill="#ffde00"/><circle cx="22" cy="19" r="1.6" fill="#ffde00"/></svg><span class="aila-flag-name">Chinese</span></button>
+</div>
+<button class="aila-tr-moretoggle" id="ailaTrMoreBtn">More languages ▾</button>
+<div class="aila-flags aila-flags-more" id="ailaFlagsMore">
+<button class="aila-flag" data-lang="Dutch"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="13.4" fill="#ae1c28"/><rect y="13.3" width="60" height="13.4" fill="#fff"/><rect y="26.6" width="60" height="13.4" fill="#21468b"/></svg><span class="aila-flag-name">Dutch</span></button>
+<button class="aila-flag" data-lang="Polish"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="20" fill="#fff"/><rect y="20" width="60" height="20" fill="#dc143c"/></svg><span class="aila-flag-name">Polish</span></button>
+<button class="aila-flag" data-lang="Turkish"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="40" fill="#e30a17"/><circle cx="24" cy="20" r="10" fill="#fff"/><circle cx="27" cy="20" r="8" fill="#e30a17"/><polygon points="36,20 40.5,21.5 39.5,16.8 42.6,13.5 38.3,13 36,9 33.7,13 29.4,13.5 32.5,16.8 31.5,21.5" fill="#fff" transform="translate(-2 3.5) scale(1.05)"/></svg><span class="aila-flag-name">Turkish</span></button>
+<button class="aila-flag" data-lang="Russian"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="13.4" fill="#fff"/><rect y="13.3" width="60" height="13.4" fill="#0039a6"/><rect y="26.6" width="60" height="13.4" fill="#d52b1e"/></svg><span class="aila-flag-name">Russian</span></button>
+<button class="aila-flag" data-lang="Korean"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="40" fill="#fff"/><path d="M20 20 A10 10 0 0 1 40 20 Z" fill="#cd2e3a"/><path d="M20 20 A10 10 0 0 0 40 20 Z" fill="#0047a0"/><circle cx="25" cy="20" r="5" fill="#cd2e3a"/><circle cx="35" cy="20" r="5" fill="#0047a0"/><g stroke="#000" stroke-width="1.6"><path d="M8 9 l7 -4 M8 12 l7 -4 M8 15 l7 -4"/><path d="M45 5 l7 4 M45 8 l7 4 M45 11 l7 4"/><path d="M8 25 l7 4 M8 28 l7 4 M8 31 l7 4"/><path d="M45 29 l7 -4 M45 32 l7 -4 M45 35 l7 -4"/></g></svg><span class="aila-flag-name">Korean</span></button>
+<button class="aila-flag" data-lang="Hindi"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="13.4" fill="#ff9933"/><rect y="13.3" width="60" height="13.4" fill="#fff"/><rect y="26.6" width="60" height="13.4" fill="#138808"/><circle cx="30" cy="20" r="5" fill="none" stroke="#000080" stroke-width="1.4"/><circle cx="30" cy="20" r="1" fill="#000080"/></svg><span class="aila-flag-name">Hindi</span></button>
+<button class="aila-flag" data-lang="Arabic"><svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="40" fill="#006c35"/><text x="30" y="29" font-size="24" text-anchor="middle" fill="#fff" font-family="system-ui, Arial, sans-serif">ع</text></svg><span class="aila-flag-name">Arabic</span></button>
+</div>
+<button class="aila-tr-ready" id="ailaTrReady">🎤 Ready to translate</button>
+<div class="aila-tr-row">
+<button class="aila-tr-photo" id="ailaTrPhoto">📷 Translate a photo</button>
+<button class="aila-tr-course" id="ailaTrCourse">📚 Start the course</button>
+</div>
+<button class="aila-tr-text-btn" id="ailaTrTextBtn">✍️ Translate a text message</button>
+<div class="aila-tr-text" id="ailaTrText">
+<div class="aila-tr-text-dir">
+<button class="on" id="ailaTxtToMe" data-dir="me">They wrote it → my language</button>
+<button id="ailaTxtToThem" data-dir="them">I'm writing → their language</button>
+</div>
+<textarea id="ailaTxtIn" rows="4" placeholder="Paste the message here, or type what you want to say…"></textarea>
+<div class="aila-tr-text-row">
+<button class="go" id="ailaTxtGo">Translate</button>
+<button class="alt" id="ailaTxtShot">📷 Upload a screenshot instead</button>
+</div>
+<div class="aila-tr-text-out" id="ailaTxtOutWrap" style="display:none;">
+<div class="aila-tr-text-label" id="ailaTxtOutLabel">Translation</div>
+<div id="ailaTxtOut"></div>
+<button class="copy" id="ailaTxtCopy">Copy</button>
+</div>
+</div>
+<div class="aila-tr-status" id="ailaTrStatus"></div>
+</div>
+</div>
+<!-- COPIED! NOTE (click-to-copy a text block) -->
+<div class="aila-copy-toast" id="ailaCopyToast">Copied!</div>
+<!-- CONNECTION-LOST BANNER (v6.2) -->
+<div class="aila-reconn-toast" id="ailaReconnToast">
+  <span>⚠ The connection to your teacher was lost.</span>
+  <button id="ailaReconnBtn">Reconnect</button>
+</div>
+<!-- DOCUMENT-READY BANNER (shown when the agent saves a document) -->
+<div class="aila-doc-toast" id="ailaDocToast">
+  <span>📄 Your document is ready</span>
+  <button class="aila-doc-open" id="ailaDocOpen">Open</button>
+  <button class="aila-doc-dismiss" id="ailaDocDismiss" title="Dismiss">✕</button>
+</div>
+<!-- FULLSCREEN CONTROLS (visible only in full-screen mode) -->
+<button class="aila-fs-arrow aila-fs-prev" id="ailaFsPrev" title="Previous slide">‹</button>
+<button class="aila-fs-arrow aila-fs-next" id="ailaFsNext" title="Next slide">›</button>
+<button class="aila-fs-exit" id="ailaFsExit" title="Exit full screen">✕ Exit</button>
+<!-- VIDEO/AUDIO/IMAGE OVERLAY (plays media links from the slides, over the slide) -->
+<div class="aila-video-overlay" id="ailaVideoOverlay">
+<div class="aila-video-overlay-box">
+<button class="aila-video-overlay-close" id="ailaVideoOverlayClose" title="Close">✕</button>
+<button class="aila-video-overlay-close" id="ailaVideoOverlayPop" title="Open in its own tab" style="right:24px; font-size:14px;">↗</button>
+<iframe id="ailaVideoOverlayFrame" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen=""></iframe>
+<audio id="ailaAudioOverlayPlayer" controls="controls"></audio>
+<img id="ailaImageOverlayPic" alt="">
+<div class="aila-photo-text" id="ailaPhotoText"></div>
+<button class="aila-photo-copy" id="ailaPhotoCopy">Copy text</button>
+</div>
+</div>
+</div>
+<!-- Slide navigation (hidden until slides are showing) -->
+<div class="aila-nav" id="ailaNav">
+<button class="aila-nav-button" id="ailaPrevBtn">◂ Previous</button>
+<div class="aila-slide-indicator" id="ailaSlideIndicator">Slide 1 of 1</div>
+<button class="aila-nav-button" id="ailaNextBtn">Next ▸</button>
+<select class="aila-section-jump" id="ailaSectionJump">
+<option value="">Jump to section…</option>
+<!-- Section options inserted here by JavaScript -->
+</select>
+<select class="aila-section-jump" id="ailaLangSelect" title="Slide language">
+<option value="en" selected="">🌐 English (original)</option>
+<option value="es">Español</option>
+<option value="fr">Français</option>
+<option value="de">Deutsch</option>
+<option value="pt">Português</option>
+<option value="it">Italiano</option>
+<option value="nl">Nederlands</option>
+<option value="pl">Polski</option>
+<option value="tr">Türkçe</option>
+<option value="ru">Русский</option>
+<option value="ja">日本語</option>
+<option value="zh">中文（简体）</option>
+<option value="ko">한국어</option>
+<option value="hi">हिन्दी</option>
+<option value="ar">العربية</option>
+</select>
+<button class="aila-fs-button" id="ailaFsBtn">⛶ Full screen</button>
+<button class="aila-voice-button" id="ailaVoiceBtn">🔊 Start Course</button>
+<button class="aila-sync-button" id="ailaSyncBtn">⟳ Sync to current slide</button>
+<button class="aila-quiz-button" id="ailaQuizBtn">🧠 Knowledge Check</button>
+<button class="aila-photo-button" id="ailaPhotoBtn">📷 Translate a photo</button>
+<input type="file" id="ailaPhotoInput" accept="image/*" capture="environment" style="display:none;">
+<input type="file" id="ailaShotInput" accept="image/*" style="display:none;">
+</div>
+</div>
+<!-- RIGHT RAIL: ElevenLabs widget -->
+<div class="aila-rail">
+<div class="aila-activation-cue" id="ailaActivationCue">
+      ↓ Click "Begin the Course" below to start live instruction ↓
+    </div>
+<div class="aila-widget-wrapper" id="ailaWidgetWrapper">
+<!-- ElevenLabs widget is inserted here by JavaScript -->
+</div>
+</div>
+</div>
+<!-- ========== EXTERNAL LIBRARIES ========== -->
+<!-- Vimeo Player API: lets us detect when the welcome video ends -->
+<script src="https://player.vimeo.com/api/player.js"></script>
+<!-- PDF.js: renders the course PDF in the browser -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- ElevenLabs Conversational AI widget -->
+<script async="" src="https://unpkg.com/@elevenlabs/convai-widget-embed" type="text/javascript"></script>
+<!-- ========== PLAYER LOGIC ========== -->
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // COURSE LIST
+  // (The course list now lives in courses.json on GitHub.)
+  // ============================================================
+  // ============================================================
+  // KEYSTONE: load the course list from GitHub; show a clean message if it cannot load
+  // ============================================================
+  var COURSES_URL = 'https://raw.githubusercontent.com/jdidonatojr/language-teammate-files/main/courses.json';
+  fetch(COURSES_URL, { cache: 'no-store' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(lib) { bootWithLibrary(lib); })
+    .catch(function(err) {
+      console.warn('courses.json did not load.', err);
+      document.body.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;height:100vh;' +
+        'font-family:system-ui,-apple-system,Arial,sans-serif;font-size:18px;color:#333;' +
+        'text-align:center;padding:24px;box-sizing:border-box;">' +
+        'Course list is temporarily unavailable. Please refresh.</div>';
+    });
+
+  // Everything below runs once we have a course list (loaded OR fallback).
+  function bootWithLibrary(COURSE_LIBRARY) {
+  // ============================================================
+  // STEP 1: READ ?course=N FROM THE URL
+  // ============================================================
+  const urlParams = new URLSearchParams(window.location.search);
+  let courseKey = urlParams.get('course');
+
+  // MASK: hide the course number from the address bar. The number is
+  // read once, remembered for this tab (so refresh still works), and
+  // the visible address becomes just /teacher/. A copied bare address
+  // does NOT grant access — only real catalog links do.
+  if (courseKey) {
+    try { sessionStorage.setItem('lt_course_key', courseKey); } catch (e) {}
+    try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+  } else {
+    try { courseKey = sessionStorage.getItem('lt_course_key'); } catch (e) {}
+  }
+
+  // v7.6: no course in the address is NORMAL — the page opens as the
+  // translator and the course is picked later from a list. An unknown
+  // number is simply ignored. (?course=N links still work.)
+  if (courseKey && !COURSE_LIBRARY[courseKey]) courseKey = null;
+
+  // The "no course yet" placeholder. Everything that reads COURSE keeps
+  // working; applyCourse() swaps in the real one when it is chosen.
+  var NO_COURSE = {
+    id: 'none',
+    title: 'Language Teammate',
+    totalSlides: 0,
+    pdfUrl: '',
+    sections: [],
+    firstMessage: "Welcome! I'm your language teammate. When you want a lesson, tap Start the course on the screen."
+  };
+  let COURSE = courseKey ? COURSE_LIBRARY[courseKey] : NO_COURSE;
+
+  // ============================================================
+  // ERROR PAGE: lists all available courses as clickable links
+  // ============================================================
+  function showErrorPage() {
+    document.getElementById('ailaPlayer').style.display = 'none';
+    document.getElementById('ailaErrorPage').style.display = 'flex';
+  }
+
+  // ============================================================
+  // ACCESS GATE — email OTP before the course is shown. A passed
+  // gate is remembered on this device for 24 hours.
+  // ============================================================
+  var ACCESS_URL = 'https://language-teammate.vercel.app/api/access';
+  var PASS_KEY = 'lt_access_pass';
+  var PASS_HOURS = 168;   // v7.1: 7 days — an average vacation week
+
+  // ============================================================
+  // LEARNER MEMORY (profile store)
+  // The OTP gate saved the learner's verified email. Using it, the
+  // page fetches their saved profile (level, goal, last slide) and
+  // hands it to the instructor as dynamic variables, then quietly
+  // reports each slide turn so next time picks up where they left off.
+  // ============================================================
+  var PROFILE_URL = 'https://language-teammate.vercel.app/api/save_profile';
+  var learnerProfile = null;
+
+  function readPassEmail() {
+    try {
+      var pass = JSON.parse(localStorage.getItem(PASS_KEY) || '{}');
+      if (pass && pass.email) return String(pass.email).toLowerCase();
+    } catch (e) {}
+    return '';
+  }
+
+  function updateWidgetVars() {
+    var w = document.querySelector('elevenlabs-convai');
+    if (!w) return;
+    var em = readPassEmail();
+    var prof = learnerProfile || {};
+    w.setAttribute('dynamic-variables', JSON.stringify({
+      course_id: COURSE.id,
+      course_title: COURSE.title,
+      total_slides: String(COURSE.totalSlides),
+      course_number: courseKey ? String(courseKey) : '0',
+      learner_email: em || 'unknown@esourceaigroup.com',
+      returning: prof.level ? 'yes' : 'no',
+      learner_level: prof.level ? String(prof.level) : '0',
+      learner_goal: prof.goal ? String(prof.goal) : '',
+      resume_slide: prof.last_slide ? String(prof.last_slide) : '0',
+      start_mode: startMode || 'course',  // v7.1: 'translator' or 'course'
+      target_lang: targetLang || 'auto',  // v7.1: 'auto' or a language name
+      day: String(currentDay || 1),       // v8.0: phrase-a-day day number
+      learning_lang: learningLang || 'none' // v8.0: language being learned
+    }));
+  }
+
+  function fetchProfile() {
+    var em = readPassEmail();
+    if (!em || !courseKey) return;   // v7.6: profiles are per course
+    fetch(PROFILE_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get', email: em, course: String(courseKey) })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.ok && data.profile) {
+          learnerProfile = data.profile;
+          // Reopen their last slide — but only if the slides have not
+          // started yet, so we never yank a live session sideways.
+          var ls = parseInt(learnerProfile.last_slide, 10);
+          if (ls >= 1 && ls <= COURSE.totalSlides && !pdfDoc) {
+            currentSlide = ls;
+            if (ls > highestSlideReached) highestSlideReached = ls;
+          }
+        }
+        updateWidgetVars();
+      })
+      .catch(function() { updateWidgetVars(); });
+  }
+
+  // v5.6: one helper for every profile save (dashboard fields included).
+  function saveProfile(extra) {
+    var em = readPassEmail();
+    if (!em || !courseKey) return;   // v7.6: nothing to save until a course is chosen
+    var body = { action: 'save', email: em, course: String(courseKey),
+                 total_slides: COURSE.totalSlides, language: currentLang || 'en' };
+    for (var k in extra) { if (extra.hasOwnProperty(k)) body[k] = extra[k]; }
+    fetch(PROFILE_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).catch(function() {});
+  }
+
+  var reportTimer = null;
+  function reportSlideSoon() {
+    clearTimeout(reportTimer);
+    reportTimer = setTimeout(function() {
+      saveProfile({ last_slide: currentSlide, highest_slide: highestSlideReached });
+    }, 1500);
+  }
+
+  // v5.6: count this visit as a session (once per page load, when the
+  // learner actually starts the slides).
+  var sessionReported = false;
+  function reportSession() {
+    if (sessionReported) return;
+    sessionReported = true;
+    saveProfile({ session: 1 });
+  }
+
+  // v5.6: the Knowledge Check hands its score to the page; save it.
+  window.addEventListener('message', function(ev) {
+    var d = ev.data;
+    if (d && d.type === 'aila-quiz-result') {
+      saveProfile({ quiz_right: d.right, quiz_total: d.total });
+    }
+  });
+
+  function hasValidPass() {
+    try {
+      var raw = localStorage.getItem(PASS_KEY);
+      if (!raw) return false;
+      var pass = JSON.parse(raw);
+      return pass && pass.exp && Date.now() < pass.exp;
+    } catch (e) { return false; }
+  }
+
+  function gateNote(msg, isErr) {
+    var el = document.getElementById('ailaGateNote');
+    el.textContent = msg || '';
+    el.className = 'aila-gate-note' + (isErr ? ' err' : '');
+  }
+
+  if (!hasValidPass()) {
+    document.getElementById('ailaGate').classList.add('show');
+
+    document.getElementById('ailaGateSend').addEventListener('click', function() {
+      var email = document.getElementById('ailaGateEmail').value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        gateNote('Please enter a valid email address.', true);
+        return;
+      }
+      var btn = this;
+      btn.disabled = true;
+      gateNote('Sending…');
+      fetch(ACCESS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'request', email: email })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          btn.disabled = false;
+          if (data.ok) {
+            document.getElementById('ailaGateStep1').style.display = 'none';
+            document.getElementById('ailaGateStep2').style.display = 'block';
+            gateNote(data.message || '');
+            document.getElementById('ailaGateCode').focus();
+          } else {
+            gateNote(data.message || 'Something went wrong — try again.', true);
+          }
+        })
+        .catch(function() {
+          btn.disabled = false;
+          gateNote('Could not reach the access service — try again.', true);
+        });
+    });
+
+    document.getElementById('ailaGateVerify').addEventListener('click', function() {
+      var email = document.getElementById('ailaGateEmail').value.trim();
+      var code = document.getElementById('ailaGateCode').value.trim();
+      if (code.length < 6) { gateNote('Please enter the 6-digit code.', true); return; }
+      var btn = this;
+      btn.disabled = true;
+      gateNote('Checking…');
+      fetch(ACCESS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', email: email, code: code })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          btn.disabled = false;
+          if (data.ok) {
+            try {
+              localStorage.setItem(PASS_KEY, JSON.stringify({
+                email: email,
+                exp: Date.now() + PASS_HOURS * 3600 * 1000
+              }));
+            } catch (e) {}
+            document.getElementById('ailaGate').classList.remove('show');
+            fetchProfile();
+          } else {
+            gateNote(data.message || 'That code is not right — try again.', true);
+          }
+        })
+        .catch(function() {
+          btn.disabled = false;
+          gateNote('Could not reach the access service — try again.', true);
+        });
+    });
+
+    document.getElementById('ailaGateBack').addEventListener('click', function() {
+      document.getElementById('ailaGateStep2').style.display = 'none';
+      document.getElementById('ailaGateStep1').style.display = 'block';
+      gateNote('');
+    });
+  }
+
+  // ============================================================
+  // SHOW THE PLAYER AND POPULATE COURSE-SPECIFIC ELEMENTS
+  // ============================================================
+  document.getElementById('ailaPlayer').style.display = 'flex';
+
+  // v7.6: everything that depends on WHICH course is loaded lives in
+  // applyCourse(), so it can run at boot (placeholder or ?course=N)
+  // and again when the traveler picks a course from the list.
+  function applyCourse(key) {
+    courseKey = key || null;
+    COURSE = courseKey ? COURSE_LIBRARY[courseKey] : NO_COURSE;
+    try {
+      if (courseKey) sessionStorage.setItem('lt_course_key', courseKey);
+      else sessionStorage.removeItem('lt_course_key');
+    } catch (e) {}
+
+    document.getElementById('ailaCourseLabel').textContent = COURSE.title;
+    document.title = COURSE.title + ' — Language Teammate';
+
+    var sectionJump = document.getElementById('ailaSectionJump');
+    while (sectionJump.options.length > 1) sectionJump.remove(1);
+    COURSE.sections.forEach(function(section) {
+      var option = document.createElement('option');
+      option.value = section.startSlide;
+      option.textContent = section.label;
+      sectionJump.appendChild(option);
+    });
+
+    // Greeting for this course (other languages are translated on demand).
+    for (var k in greetingCache) { if (/\|course$/.test(k)) delete greetingCache[k]; }
+    greetingCache['en|course'] = COURSE.firstMessage;
+
+    // Saved progress for this course (browser-side bookmark).
+    currentSlide = 1; highestSlideReached = 1; isReturningLearner = false;
+    try {
+      var storedP = courseKey ? localStorage.getItem('lt_progress_' + COURSE.id) : null;
+      if (storedP) {
+        var dataP = JSON.parse(storedP);
+        isReturningLearner = true;
+        highestSlideReached = dataP.highestSlideReached || 1;
+        currentSlide = dataP.lastSlide || 1;
+      }
+    } catch (e) {}
+
+    // Knowledge Check button: only if this course has a quiz file.
+    var qb = document.getElementById('ailaQuizBtn');
+    qb.style.display = 'none';
+    qb.onclick = null;
+    if (courseKey) {
+      var quizFileUrl = 'https://raw.githubusercontent.com/' + REPO_PATH + '/main/' +
+                        courseKey + '-quiz.json';
+      fetch(quizFileUrl, { cache: 'no-store' })
+        .then(function(r) { if (!r.ok) throw new Error('no quiz'); return r.json(); })
+        .then(function() {
+          qb.style.display = 'inline-block';
+          qb.onclick = function() {
+            openQuizOverlay(QUIZ_ENGINE + '?quiz=' + encodeURIComponent(courseKey) +
+                            '&repo=' + encodeURIComponent(REPO_PATH));
+          };
+        })
+        .catch(function() { /* no quiz — button stays hidden */ });
+    }
+
+    updateWidgetVars();
+    if (courseKey) fetchProfile();   // learner memory for this course
+  }
+
+  // Course picker (v7.6): shown the first time "Start the course" is tapped.
+  function chooseCourse(then) {
+    if (courseKey) { then(); return; }
+    var list = document.getElementById('ailaCourseList');
+    list.innerHTML = '';
+    var keys = Object.keys(COURSE_LIBRARY).filter(function(k) {
+      return COURSE_LIBRARY[k] && typeof COURSE_LIBRARY[k] === 'object' && COURSE_LIBRARY[k].title;
+    });
+    keys.forEach(function(k) {
+      var b = document.createElement('button');
+      b.className = 'aila-course-choice';
+      b.textContent = COURSE_LIBRARY[k].title;
+      b.addEventListener('click', function() {
+        document.getElementById('ailaCoursePick').classList.add('hidden');
+        applyCourse(k);
+        then();
+      });
+      list.appendChild(b);
+    });
+    document.getElementById('ailaCoursePick').classList.remove('hidden');
+  }
+  document.getElementById('ailaCourseCancel').addEventListener('click', function() {
+    document.getElementById('ailaCoursePick').classList.add('hidden');
+  });
+
+  // Build the ElevenLabs widget tag with course-specific first message
+  // and dynamic variables (so the agent knows which course it's teaching)
+  // ============================================================
+  // THREE LEAN AGENTS (v9.0) — one per mode, so the translator never
+  // carries the course rules on every turn. The page swaps the widget
+  // to the right agent just before a call starts.
+  // ============================================================
+  var AGENT_IDS = {
+    translator: 'agent_2001m2dpv44ef08rtj3x74c6b7b2',
+    phrase:     'agent_4001m2dq6da9et58xr0xsjy5c8dz',
+    course:     'agent_3701m2bj6pfmftg9q78m1ajydcpj'   // the original (full) agent
+  };
+  function agentFor(mode) {
+    var id = AGENT_IDS[mode] || '';
+    if (!id || /^PASTE_/.test(id)) id = AGENT_IDS.course;   // fallback: the full agent
+    return id;
+  }
+  const widgetWrapper = document.getElementById('ailaWidgetWrapper');
+
+  function buildWidget(agentId) {
+    var old = document.querySelector('elevenlabs-convai');
+    if (old && old.getAttribute('agent-id') === agentId) return old;
+    if (old) old.remove();
+    var widgetTag = document.createElement('elevenlabs-convai');
+    widgetTag.setAttribute('agent-id', agentId);
+    widgetTag.setAttribute('disable-floating-button', 'true');
+    widgetTag.setAttribute('override-first-message', COURSE.firstMessage);
+    widgetTag.setAttribute('override-language', 'en');   // v5.0: pinned, never guessed
+    widgetTag.addEventListener('elevenlabs-convai:call', onWidgetCall);
+    widgetWrapper.appendChild(widgetTag);
+    updateWidgetVars();
+    return widgetTag;
+  }
+
+  // Make sure the widget on the page is the agent for this mode.
+  // Called right before every call start.
+  function ensureAgent(mode) { return buildWidget(agentFor(mode)); }
+
+  // v5.9: give the agent a slide remote — the advance_slide client tool.
+  // The widget asks the page for client tools when a call starts.
+  function onWidgetCall(event) {
+    try {
+      event.detail.config.clientTools = event.detail.config.clientTools || {};
+      event.detail.config.clientTools.advance_slide = async function() {
+        if (!pdfDoc) {
+          return 'IGNORED: the slides are not on screen yet.';
+        }
+        if (currentSlide >= COURSE.totalSlides) {
+          return 'IGNORED: already on the last slide (' + currentSlide + ' of ' +
+                 COURSE.totalSlides + '). Do not call advance_slide again.';
+        }
+        currentSlide++;
+        renderSlide(currentSlide);
+        updateSlideIndicator();
+        return 'DONE: the screen now shows slide ' + currentSlide + ' of ' +
+               COURSE.totalSlides + '. Teach this slide now.';
+      };
+      // v8.0: phrase-a-day tools.
+      event.detail.config.clientTools.show_phrase = async function(p) {
+        p = p || {};
+        var a = String(p.learner_text || p.learnerText || '');
+        var b = String(p.target_text || p.targetText || '');
+        if (!a && !b) return 'IGNORED: nothing to show.';
+        document.getElementById('ailaPhSayA').textContent = a;
+        document.getElementById('ailaPhSayB').textContent = b;
+        document.getElementById('ailaPhSay').classList.add('show');
+        return 'DONE: the phrase is on the screen.';
+      };
+      event.detail.config.clientTools.next_day = async function() {
+        if (!phraseData) return 'IGNORED: the phrase course is not open.';
+        var total = phraseData.days.length;
+        if (currentDay >= total) {
+          return 'IGNORED: day ' + currentDay + ' is the last day of this module. Do not call next_day again.';
+        }
+        setDay(currentDay + 1);
+        return 'DONE: the screen now shows day ' + currentDay + ' of ' + total +
+               '. Teach DAY ' + currentDay + ' now, starting from step 1.';
+      };
+    } catch (e) { console.warn('client tool setup failed', e); }
+  }
+  buildWidget(agentFor('course'));   // first widget; swapped per mode before each call
+  fetchProfile();              // enriches the dynamic variables once the profile arrives
+
+  // ============================================================
+  // KNOWLEDGE CHECK — show the button only if this course has a quiz
+  // (a file named <courseNumber>-quiz.json in the same repo as courses.json)
+  // ============================================================
+  var QUIZ_ENGINE = 'https://language-teammate.vercel.app/quiz.html';
+  var repoMatch = COURSES_URL.match(/raw\.githubusercontent\.com\/([^\/]+\/[^\/]+)\//);
+  var REPO_PATH = repoMatch ? repoMatch[1] : '';
+  // (the quiz-file check now runs inside applyCourse — v7.6)
+
+  // ============================================================
+  // ADMIN PEEK — click the course title 5 times fast to show the
+  // course number (masking hides it from the address bar).
+  // ============================================================
+  var peekCount = 0, peekTimer = null;
+  document.getElementById('ailaCourseLabel').addEventListener('click', function() {
+    peekCount++;
+    clearTimeout(peekTimer);
+    peekTimer = setTimeout(function() { peekCount = 0; }, 1500);
+    if (peekCount >= 5) {
+      peekCount = 0;
+      if (!courseKey) { alert('No course chosen yet.'); return; }
+      alert('Course #' + courseKey + ' — ' + COURSE.title + '\n' +
+            'Revision link: ' + window.location.pathname + '?course=' + courseKey);
+    }
+  });
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  let currentSlide = 1;
+  let pdfDoc = null;
+  let isReturningLearner = false;
+  let highestSlideReached = 1;
+
+  // (progress restore now runs inside applyCourse — v7.6)
+
+  // ============================================================
+  // VIMEO WELCOME VIDEO — detect when it ends, then show button
+  // ============================================================
+  const videoIframe = document.getElementById('ailaWelcomeVideo');
+  const beginOverlay = document.getElementById('ailaBeginOverlay');
+  const skipLink = document.getElementById('ailaSkipLink');
+
+  var vimeoPlayer = null;
+  var introVideoMode = false;    // v8.1: "Watch how it works" from the language popover
+  function initVimeo() {
+    if (typeof Vimeo === 'undefined') {
+      setTimeout(initVimeo, 200);
+      return;
+    }
+    vimeoPlayer = new Vimeo.Player(videoIframe);
+    vimeoPlayer.on('ended', function() {
+      if (introVideoMode) { endIntroVideo(); return; }
+      beginOverlay.style.display = 'block';
+    });
+  }
+  initVimeo();
+
+  // v8.1: play the overview from the language popover, then come back
+  // to the popover (without the video button).
+  function endIntroVideo() {
+    introVideoMode = false;
+    var gate = document.getElementById('ailaLangGate');
+    gate.classList.add('seen');
+    gate.classList.remove('hidden');
+  }
+  document.getElementById('ailaLangVideo').addEventListener('click', function() {
+    var lang = document.getElementById('ailaLangSelectGate').value || 'en';
+    currentLang = lang;
+    document.getElementById('ailaLangSelect').value = lang;
+    introVideoMode = true;
+    document.getElementById('ailaLangGate').classList.add('hidden');
+    if (vimeoPlayer) {
+      vimeoPlayer.enableTextTrack(lang).catch(function() {});   // v8.2: captions on for every language, English included
+      vimeoPlayer.setCurrentTime(0).catch(function() {});
+      vimeoPlayer.play().catch(function() {});
+    }
+  });
+
+  // ============================================================
+  // LANGUAGE GATE (v6.0) — the choice that drives everything:
+  // subtitles on the welcome video, the teacher's spoken language and
+  // greeting, and the slide translations. Then the video plays.
+  // ============================================================
+  document.getElementById('ailaLangGo').addEventListener('click', function() {
+    var lang = document.getElementById('ailaLangSelectGate').value || 'en';
+    currentLang = lang;
+    document.getElementById('ailaLangSelect').value = lang;
+    chooseCourse(function() { startCourseFromGate(lang); });
+  });
+  function startCourseFromGate(lang) {
+    if (COURSE.type === 'phrase') {           // v8.0: phrase-a-day course — no video, no slides
+      document.getElementById('ailaLangGate').classList.add('hidden');
+      if (vimeoPlayer) { vimeoPlayer.pause().catch(function() {}); }
+      openPhraseMode();
+      return;
+    }
+    setAgentLanguage(lang);          // voice + translated greeting (before the call starts)
+    document.getElementById('ailaLangGate').classList.add('hidden');
+    if (vimeoPlayer) {
+      // Switch subtitles and play on the SAME player, so the
+      // "video ended" listener stays alive.
+      vimeoPlayer.enableTextTrack(lang).catch(function() {});   // v8.2: captions on for every language
+      vimeoPlayer.play().catch(function() {});
+    }
+  }
+
+  // v7.1: "Translate now" skips the video and opens the translator panel.
+  document.getElementById('ailaLangTranslate').addEventListener('click', function() {
+    var lang = document.getElementById('ailaLangSelectGate').value || 'en';
+    currentLang = lang;
+    document.getElementById('ailaLangSelect').value = lang;
+    document.getElementById('ailaLangGate').classList.add('hidden');
+    if (vimeoPlayer) { vimeoPlayer.pause().catch(function() {}); }
+    showTranslatorPanel();
+  });
+
+  skipLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (introVideoMode) {                       // v8.1
+      if (vimeoPlayer) { vimeoPlayer.pause().catch(function() {}); }
+      endIntroVideo();
+      return;
+    }
+    // v6.1: silence the welcome video so it never talks over the teacher.
+    if (vimeoPlayer) { vimeoPlayer.pause().catch(function() {}); }
+    advanceToSlides();
+  });
+
+  document.getElementById('ailaBeginButton').addEventListener('click', advanceToSlides);
+
+  // ============================================================
+  // MIC PERMISSION (v4.8) — ask for the microphone the instant the
+  // learner clicks, while the browser still counts it as a user
+  // gesture. The browser shows its Allow popup if needed. We close
+  // our test stream right away; the widget then opens its own.
+  // ============================================================
+  function requestMicThen(next) {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+          // Permission is granted — release the test stream.
+          stream.getTracks().forEach(function(t) { t.stop(); });
+          next();
+        })
+        .catch(function(err) {
+          console.warn('mic permission problem:', err);
+          alert('This course needs your microphone for voice instruction.\n\n' +
+                'Please allow microphone access when your browser asks, ' +
+                'or use the text box to type your questions.');
+          next(); // still start — the learner can type instead
+        });
+    } else {
+      next(); // very old browser — let the widget try on its own
+    }
+  }
+
+  // ============================================================
+  // ADVANCE FROM WELCOME VIDEO TO SLIDES
+  // ============================================================
+  // Auto-start the voice instructor by pressing the widget's own start
+  // button inside its (open) shadow DOM. Retries briefly in case the
+  // widget hasn't finished drawing yet. (The Begin/Skip click is the
+  // user gesture browsers require for microphone access.)
+  function autoStartAgent(attempt) {
+    try {
+      var w = document.querySelector('elevenlabs-convai');
+      if (w && typeof w.startConversation === 'function') {
+        w.startConversation();
+        return;
+      }
+      var buttons = w && w.shadowRoot ?
+        Array.prototype.slice.call(w.shadowRoot.querySelectorAll('button')) : [];
+      if (buttons.length) {
+        // Prefer the button whose label says it starts/answers a call
+        // (after a call ends, the first button is no longer the starter).
+        var starter = null;
+        for (var i = 0; i < buttons.length; i++) {
+          var label = (buttons[i].getAttribute('aria-label') || '') + ' ' +
+                      (buttons[i].title || '') + ' ' + (buttons[i].textContent || '');
+          if (/start|call|phone|talk|resume|begin|try again|new conversation/i.test(label) &&
+              !/end|hang|disconnect/i.test(label)) { starter = buttons[i]; break; }
+        }
+        (starter || buttons[0]).click();
+        return;
+      }
+    } catch (e) { /* fall through to retry */ }
+    if (attempt < 10) {
+      setTimeout(function() { autoStartAgent(attempt + 1); }, 300);
+    } else {
+      console.warn('agent auto-start: widget button not found');
+    }
+  }
+
+  // ============================================================
+  // TRANSLATOR PANEL (v7.1)
+  // The traveler picks the other person's language (or Detect), taps
+  // "Ready to translate", and the voice starts in translator mode.
+  // "Start the course" ends that call and starts a fresh one in course
+  // mode with the slides on screen.
+  // ============================================================
+  var startMode = 'course';     // what the NEXT voice session opens as
+  var targetLang = 'auto';      // the other person's language, or 'auto'
+  var TRANSLATOR_LANG_CODES = { Italian: 'it', Spanish: 'es', French: 'fr', German: 'de',
+    Portuguese: 'pt', Japanese: 'ja', Chinese: 'zh', Dutch: 'nl', Polish: 'pl',
+    Turkish: 'tr', Russian: 'ru', Korean: 'ko', Hindi: 'hi', Arabic: 'ar' };
+
+  function trStatus(msg) { document.getElementById('ailaTrStatus').textContent = msg || ''; }
+
+  function showTranslatorPanel() {
+    startMode = 'translator';
+    document.getElementById('ailaCourseLabel').textContent = 'Language Teammate — Translator';
+    document.getElementById('ailaPhrase').classList.remove('show');
+    document.getElementById('ailaPlayer').classList.remove('phrase-mode');
+    updateWidgetVars();
+    setAgentLanguage(currentLang);   // short translator greeting, learner's language
+    document.getElementById('ailaVideoContainer').style.display = 'none';
+    document.getElementById('ailaPdfContainer').style.display = 'none';
+    document.getElementById('ailaTranslator').classList.add('show');
+    document.getElementById('ailaNav').style.display = 'flex';
+    document.getElementById('ailaPlayer').classList.add('translator-mode');
+    trStatus('');
+  }
+
+  function setTargetLang(name) {
+    targetLang = name || 'auto';
+    var buttons = document.querySelectorAll('.aila-flag');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].classList.toggle('on', buttons[i].getAttribute('data-lang') === targetLang);
+    }
+    updateWidgetVars();
+    // The agent reads its variables when a call starts, so a change
+    // during a live call means a quick restart.
+    if (voiceActive && startMode === 'translator') {
+      trStatus('Switching to ' + targetLang + '…');
+      restartVoiceInLanguage(currentLang);
+    }
+  }
+
+  function onFlagClick(e) {
+    var b = e.target.closest ? e.target.closest('.aila-flag') : null;
+    if (!b) return;
+    setTargetLang(b.getAttribute('data-lang'));
+  }
+  document.getElementById('ailaFlags').addEventListener('click', onFlagClick);
+  document.getElementById('ailaFlagsMore').addEventListener('click', onFlagClick);
+  document.getElementById('ailaTrMoreBtn').addEventListener('click', function() {
+    var more = document.getElementById('ailaFlagsMore');
+    var open = more.classList.toggle('show');
+    this.textContent = open ? 'Fewer languages ▴' : 'More languages ▾';
+  });
+
+  function updateReadyButton() {
+    var b = document.getElementById('ailaTrReady');
+    if (voiceActive && startMode === 'translator') {
+      b.textContent = '⏹ Stop translating';
+      b.classList.add('live');
+    } else {
+      b.textContent = '🎤 Ready to translate';
+      b.classList.remove('live');
+    }
+  }
+
+  document.getElementById('ailaTrReady').addEventListener('click', function() {
+    if (voiceActive) {
+      var ender = widgetEndButton();
+      if (ender) ender.click();
+      voiceActive = false;
+      updateVoiceLabel();
+      updateReadyButton();
+      trStatus('Stopped. Tap "Ready to translate" to start again.');
+      return;
+    }
+    startMode = 'translator';
+    ensureAgent('translator');        // v9.0
+    updateWidgetVars();
+    reportSession();
+    trStatus('Connecting your teammate…');
+    setAgentLanguage(currentLang, function() {
+      requestMicThen(function() { autoStartAgent(0); });
+      voiceActive = true;
+      updateVoiceLabel();
+      updateReadyButton();
+      trStatus(targetLang === 'auto'
+        ? 'Listening. Speak in English; I will detect their language.'
+        : 'Listening. Speak in English; I will answer them in ' + targetLang + '.');
+    });
+  });
+
+  // Camera button on the panel shares the nav button's file input.
+  document.getElementById('ailaTrPhoto').addEventListener('click', function() {
+    document.getElementById('ailaPhotoInput').click();
+  });
+
+  // ============================================================
+  // TEXT-MESSAGE TRANSLATOR (v9.3) — paste what they wrote, or type
+  // what you want to say. Uses the flag for "their" language. No voice
+  // minutes; one small Claude call.
+  // ============================================================
+  var TEXT_URL = 'https://language-teammate.vercel.app/api/translate-text';
+  var txtDir = 'me';
+
+  document.getElementById('ailaTrTextBtn').addEventListener('click', function() {
+    var box = document.getElementById('ailaTrText');
+    var open = box.classList.toggle('show');
+    this.textContent = open ? '✍️ Hide the text translator' : '✍️ Translate a text message';
+    if (open) document.getElementById('ailaTxtIn').focus();
+  });
+  function setTxtDir(dir) {
+    txtDir = dir;
+    document.getElementById('ailaTxtToMe').classList.toggle('on', dir === 'me');
+    document.getElementById('ailaTxtToThem').classList.toggle('on', dir === 'them');
+    document.getElementById('ailaTxtIn').placeholder = dir === 'me'
+      ? 'Paste the message they sent you…'
+      : 'Type what you want to say to them…';
+  }
+  document.getElementById('ailaTxtToMe').addEventListener('click', function() { setTxtDir('me'); });
+  document.getElementById('ailaTxtToThem').addEventListener('click', function() { setTxtDir('them'); });
+
+  document.getElementById('ailaTxtGo').addEventListener('click', function() {
+    var text = document.getElementById('ailaTxtIn').value.trim();
+    if (!text) { trStatus('Paste or type something first.'); return; }
+    var target;
+    if (txtDir === 'me') {
+      target = learnerLangName();
+    } else {
+      if (targetLang === 'auto') { trStatus('Tap the flag of the language they speak first.'); return; }
+      target = targetLang;
+    }
+    var btn = this; btn.disabled = true; btn.textContent = 'Translating…';
+    fetch(TEXT_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text, target_lang: target })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.ok && data.text) {
+          document.getElementById('ailaTxtOut').textContent = data.text;
+          document.getElementById('ailaTxtOutLabel').textContent =
+            (txtDir === 'me' ? 'In ' + target + (data.detected ? ' (they wrote in ' + data.detected + ')' : '')
+                             : 'In ' + target + ' — copy this into your message');
+          document.getElementById('ailaTxtOutWrap').style.display = 'block';
+        } else {
+          trStatus('Could not translate that. ' + (data && data.error ? data.error : 'Try again.'));
+        }
+      })
+      .catch(function() { trStatus('Could not reach the translator. Check your internet signal.'); })
+      .then(function() { btn.disabled = false; btn.textContent = 'Translate'; });
+  });
+  document.getElementById('ailaTxtCopy').addEventListener('click', function() {
+    copyText(document.getElementById('ailaTxtOut').textContent || '')
+      .then(function() { showCopyToast('Copied!'); })
+      .catch(function() { showCopyToast('Could not copy.'); });
+  });
+
+  // Screenshot upload: same photo pipeline, but the picker offers the photo library.
+  document.getElementById('ailaTxtShot').addEventListener('click', function() {
+    document.getElementById('ailaShotInput').click();
+  });
+  document.getElementById('ailaShotInput').addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    handlePhotoFile(file);
+  });
+
+  // Start the course: end the translator call, then open the slides
+  // with a fresh course-mode call.
+  document.getElementById('ailaTrCourse').addEventListener('click', function() {
+    chooseCourse(startCourseFromTranslator);
+  });
+  function startCourseFromTranslator() {
+    var ender = widgetEndButton();
+    if (ender) ender.click();
+    voiceActive = false;
+    updateVoiceLabel();
+    updateReadyButton();
+    document.getElementById('ailaTranslator').classList.remove('show');
+    document.getElementById('ailaPlayer').classList.remove('translator-mode');
+    if (COURSE.type === 'phrase') { openPhraseMode(); return; }   // v8.0
+    startMode = 'course';
+    setAgentLanguage(currentLang, function() {
+      setTimeout(advanceToSlides, 1200);
+    });
+  }
+
+  // ============================================================
+  // PHRASE-A-DAY MODE (v8.0)
+  // One phrase per day from <course>-phrases.json in the files repo.
+  // Left column = learner's language, right column = the language
+  // they are learning; both translated on the fly from the English
+  // source. The teammate teaches by voice (start_mode = 'phrase').
+  // ============================================================
+  var phraseData = null;
+  var currentDay = 1;
+  var highestDay = 1;
+  var learningLang = '';           // English name, e.g. 'Italian'
+  var phraseXlate = {};            // cache: langCode -> day -> [lines]
+  var phraseToken = 0;
+  try { learningLang = localStorage.getItem('lt_learning_lang') || ''; } catch (e) {}
+
+  function phStatus(msg) { document.getElementById('ailaPhStatus').textContent = msg || ''; }
+
+  // v9.2: progress belongs to the PAIR (course + language being learned).
+  // "Italian: day 4" and "Chinese: day 1" are remembered separately.
+  function dayKey(lang) { return 'lt_day_' + (COURSE.id || 'none') + '_' + (lang || ''); }
+  function loadDayFor(lang) {
+    try {
+      var d = JSON.parse(localStorage.getItem(dayKey(lang)) || 'null');
+      if (d && d.day >= 1) return d;
+    } catch (e) {}
+    return null;
+  }
+  function saveDayFor(lang) {
+    try {
+      localStorage.setItem(dayKey(lang), JSON.stringify({ day: currentDay, highest: highestDay }));
+      localStorage.setItem('lt_last_learning_lang', lang || '');
+    } catch (e) {}
+  }
+
+  function learnerLangName() {
+    // English name of the learner's own language (for the same-language check)
+    var names = { en: 'English', es: 'Spanish', fr: 'French', de: 'German', pt: 'Portuguese',
+      it: 'Italian', nl: 'Dutch', pl: 'Polish', tr: 'Turkish', ru: 'Russian', ja: 'Japanese',
+      zh: 'Chinese', ko: 'Korean', hi: 'Hindi', ar: 'Arabic' };
+    return names[currentLang] || 'English';
+  }
+
+  function translateLines(langCode, lines) {
+    if (!langCode || langCode === 'en') return Promise.resolve(lines.slice());
+    return fetch(TRANSLATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_lang: langCode, lines: lines })
+    })
+      .then(function(r) { if (!r.ok) throw new Error('translate failed'); return r.json(); })
+      .then(function(data) { return (data.lines && data.lines.length === lines.length) ? data.lines : lines; });
+  }
+
+  function buildLearnFlags() {
+    var box = document.getElementById('ailaLearnFlags');
+    if (box.children.length) return;
+    // English is a language people LEARN too (it is not on the translator
+    // panel because the traveler already speaks it there).
+    var en = document.createElement('button');
+    en.className = 'aila-flag';
+    en.setAttribute('data-lang', 'English');
+    en.innerHTML = '<svg class="aila-flag-pic" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<rect width="60" height="40" fill="#fff"/>' +
+      '<g fill="#b22234"><rect y="0" width="60" height="3.1"/><rect y="6.2" width="60" height="3.1"/><rect y="12.3" width="60" height="3.1"/><rect y="18.5" width="60" height="3.1"/><rect y="24.6" width="60" height="3.1"/><rect y="30.8" width="60" height="3.1"/><rect y="36.9" width="60" height="3.1"/></g>' +
+      '<rect width="24" height="21.5" fill="#3c3b6e"/></svg><span class="aila-flag-name">English</span>';
+    box.appendChild(en);
+    var src = document.querySelectorAll('#ailaFlags .aila-flag, #ailaFlagsMore .aila-flag');
+    for (var i = 0; i < src.length; i++) {
+      var name = src[i].getAttribute('data-lang');
+      if (name === 'auto') continue;
+      var b = src[i].cloneNode(true);
+      b.classList.remove('on');
+      box.appendChild(b);
+    }
+    // The learner's own language plus the English tile when they chose another language.
+    box.addEventListener('click', function(e) {
+      var b = e.target.closest ? e.target.closest('.aila-flag') : null;
+      if (!b) return;
+      var name = b.getAttribute('data-lang');
+      if (name === learnerLangName()) { phStatus('You already speak ' + name + '! Pick a different one.'); return; }
+      setLearningLang(name);
+    });
+  }
+
+  function setLearningLang(name) {
+    learningLang = name;
+    try { localStorage.setItem('lt_learning_lang', name); } catch (e) {}
+    document.getElementById('ailaPhLearnName').textContent = name;
+    document.getElementById('ailaPhRightLabel').textContent = 'In ' + name;
+    document.getElementById('ailaPhPick').classList.remove('show');
+    document.getElementById('ailaPhBody').classList.add('show');
+    var tiles = document.querySelectorAll('#ailaLearnFlags .aila-flag');
+    for (var i = 0; i < tiles.length; i++) tiles[i].classList.toggle('on', tiles[i].getAttribute('data-lang') === name);
+    phraseXlate = {};
+    var saved = loadDayFor(name);
+    if (phraseData) {
+      var total = phraseData.days.length;
+      currentDay = saved ? Math.min(saved.day, total) : 1;
+      highestDay = saved ? Math.min(Math.max(saved.highest || 1, currentDay), total) : currentDay;
+      currentSlide = currentDay; highestSlideReached = highestDay;
+      document.getElementById('ailaPhSay').classList.remove('show');
+    }
+    updateWidgetVars();
+    renderDay();
+    if (voiceActive && startMode === 'phrase') {
+      phStatus('Switching to ' + name + '…');
+      restartVoiceInLanguage(currentLang);
+    }
+  }
+
+  function openPhraseMode() {
+    startMode = 'phrase';
+    document.getElementById('ailaVideoContainer').style.display = 'none';
+    document.getElementById('ailaPdfContainer').style.display = 'none';
+    document.getElementById('ailaTranslator').classList.remove('show');
+    document.getElementById('ailaPlayer').classList.remove('translator-mode');
+    document.getElementById('ailaPlayer').classList.add('phrase-mode');
+    document.getElementById('ailaNav').style.display = 'flex';
+    document.getElementById('ailaPhrase').classList.add('show');
+    document.getElementById('ailaCourseLabel').textContent = COURSE.title;
+    document.getElementById('ailaPhTitle').textContent = '📚 ' + (COURSE.title || 'Phrase of the day');
+    buildLearnFlags();
+    updateReadyButton();
+    updatePracticeButton();
+    setAgentLanguage(currentLang);
+    var file = COURSE.phrasesFile || (courseKey + '-phrases.json');
+    var url = 'https://raw.githubusercontent.com/' + REPO_PATH + '/main/' + file;
+    phStatus('Loading…');
+    fetch(url, { cache: 'no-store' })
+      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data) {
+        phraseData = data;
+        // Resume where they left off (learner memory), else day 1.
+        var ls = learnerProfile && parseInt(learnerProfile.last_slide, 10);
+        currentDay = (ls >= 1 && ls <= data.days.length) ? ls : 1;
+        highestDay = Math.max(currentDay, (learnerProfile && parseInt(learnerProfile.highest_slide, 10)) || 1);
+        // v9.2: per-language memory on this device wins over the server bookmark
+        if (learningLang && loadDayFor(learningLang) === null && currentDay > 1) {
+          // first time with this language on this device but a bookmark exists:
+          // only trust it if it was made for this same language
+          var lastLang = '';
+          try { lastLang = localStorage.getItem('lt_last_learning_lang') || ''; } catch (e) {}
+          if (lastLang !== learningLang) { currentDay = 1; highestDay = 1; }
+        }
+        phStatus('');
+        if (learningLang && learningLang !== learnerLangName()) {
+          setLearningLang(learningLang);
+        } else {
+          document.getElementById('ailaPhPick').classList.add('show');
+          document.getElementById('ailaPhBody').classList.remove('show');
+        }
+      })
+      .catch(function() { phStatus('The phrase list could not be loaded. Check your internet signal and try again.'); });
+  }
+
+  function setDay(n) {
+    if (!phraseData) return;
+    var total = phraseData.days.length;
+    if (n < 1 || n > total) return;
+    currentDay = n;
+    if (n > highestDay) highestDay = n;
+    currentSlide = n; highestSlideReached = highestDay;   // learner memory reuses the slide fields
+    document.getElementById('ailaPhSay').classList.remove('show');
+    updateWidgetVars();
+    renderDay();
+    saveProfile({ last_slide: currentDay, highest_slide: highestDay });
+    saveDayFor(learningLang);
+    try { localStorage.setItem('lt_progress_' + COURSE.id, JSON.stringify({ lastSlide: n, highestSlideReached: highestDay, timestamp: Date.now() })); } catch (e) {}
+  }
+
+  function renderDay() {
+    if (!phraseData) return;
+    var d = phraseData.days[currentDay - 1];
+    var total = phraseData.days.length;
+    document.getElementById('ailaPhDay').textContent = 'Day ' + currentDay + ' of ' + total;
+    document.getElementById('ailaPhBar').style.width = Math.round(currentDay / total * 100) + '%';
+    document.getElementById('ailaPhIcon').textContent = d.icon || '💬';
+    document.getElementById('ailaPhPrev').disabled = (currentDay <= 1);
+    document.getElementById('ailaPhNext').disabled = (currentDay >= total);
+    var leftEl = document.getElementById('ailaPhLeft'), rightEl = document.getElementById('ailaPhRight');
+    var useEl = document.getElementById('ailaPhUse'), cultEl = document.getElementById('ailaPhCulture');
+    var replyEl = document.getElementById('ailaPhReply');
+    leftEl.textContent = '…'; rightEl.textContent = '…'; useEl.textContent = ''; replyEl.textContent = '';
+    cultEl.style.display = 'none';
+    var token = ++phraseToken;
+    var lines = [d.phrase, d.use || '', d.culture || '', d.reply || '', 'You will hear back:', 'In your language'];
+    var lc = currentLang, rc = TRANSLATOR_LANG_CODES[learningLang] || 'en';
+    phraseXlate[lc] = phraseXlate[lc] || {}; phraseXlate[rc] = phraseXlate[rc] || {};
+    var pL = phraseXlate[lc][currentDay] ? Promise.resolve(phraseXlate[lc][currentDay]) : translateLines(lc, lines);
+    var pR = phraseXlate[rc][currentDay] ? Promise.resolve(phraseXlate[rc][currentDay]) : translateLines(rc, [d.phrase, d.reply || '']);
+    Promise.all([pL, pR]).then(function(res) {
+      if (token !== phraseToken) return;
+      phraseXlate[lc][currentDay] = res[0]; phraseXlate[rc][currentDay] = res[1];
+      var L = res[0], R = res[1];
+      leftEl.textContent = L[0];
+      rightEl.textContent = R[0];
+      useEl.textContent = L[1];
+      if (d.culture) { cultEl.textContent = '💡 ' + L[2]; cultEl.style.display = 'block'; }
+      if (d.reply) {
+        replyEl.innerHTML = '';
+        var lab = document.createElement('span'); lab.textContent = L[4] + ' ';
+        var b = document.createElement('b'); b.textContent = R[1];
+        var m = document.createElement('span'); m.textContent = '  —  ' + L[3];
+        replyEl.appendChild(lab); replyEl.appendChild(b); replyEl.appendChild(m);
+      }
+      document.getElementById('ailaPhLeftLabel').textContent = L[5];
+    }).catch(function() {
+      if (token !== phraseToken) return;
+      leftEl.textContent = d.phrase; rightEl.textContent = '(translation unavailable)';
+      useEl.textContent = d.use || '';
+    });
+  }
+
+  function updatePracticeButton() {
+    var b = document.getElementById('ailaPhPractice');
+    if (voiceActive && startMode === 'phrase') { b.textContent = '⏹ Stop the lesson'; b.classList.add('live'); }
+    else { b.textContent = '🎤 Practice with your teammate'; b.classList.remove('live'); }
+  }
+
+  document.getElementById('ailaPhPractice').addEventListener('click', function() {
+    if (voiceActive) {
+      var ender = widgetEndButton();
+      if (ender) ender.click();
+      voiceActive = false;
+      updateVoiceLabel(); updatePracticeButton();
+      phStatus('Lesson paused. Tap Practice to start again.');
+      return;
+    }
+    if (!learningLang) { phStatus('Pick the language you want to learn first.'); return; }
+    startMode = 'phrase';
+    ensureAgent('phrase');            // v9.0
+    updateWidgetVars();
+    reportSession();
+    phStatus('Connecting your teammate…');
+    setAgentLanguage(currentLang, function() {
+      requestMicThen(function() { autoStartAgent(0); });
+      voiceActive = true;
+      updateVoiceLabel(); updatePracticeButton();
+      phStatus('Day ' + currentDay + '. Your teammate will say the phrase, then you try.');
+    });
+  });
+
+  function changeDayByHand(n) {
+    setDay(n);
+    if (voiceActive && startMode === 'phrase') {
+      phStatus('Moving your teammate to day ' + currentDay + '…');
+      restartVoiceInLanguage(currentLang);
+    }
+  }
+  document.getElementById('ailaPhPrev').addEventListener('click', function() { changeDayByHand(currentDay - 1); });
+  document.getElementById('ailaPhNext').addEventListener('click', function() { changeDayByHand(currentDay + 1); });
+  document.getElementById('ailaPhChange').addEventListener('click', function() {
+    document.getElementById('ailaPhBody').classList.remove('show');
+    document.getElementById('ailaPhPick').classList.add('show');
+  });
+  document.getElementById('ailaPhTranslator').addEventListener('click', function() {
+    var ender = widgetEndButton();
+    if (ender) ender.click();
+    voiceActive = false;
+    updateVoiceLabel(); updatePracticeButton();
+    document.getElementById('ailaPhrase').classList.remove('show');
+    document.getElementById('ailaPlayer').classList.remove('phrase-mode');
+    showTranslatorPanel();
+  });
+
+  function advanceToSlides() {
+    startMode = 'course';
+    ensureAgent('course');            // v9.0
+    updateWidgetVars();
+    reportSession();             // v5.6: dashboard session count
+    // v4.8: secure the microphone FIRST (while the click is fresh),
+    // then start the voice instructor.
+    requestMicThen(function() {
+      autoStartAgent(0);
+    });
+    voiceActive = true;
+    updateVoiceLabel();
+    document.getElementById('ailaVideoContainer').style.display = 'none';
+    document.getElementById('ailaPdfContainer').style.display = 'flex';
+    document.getElementById('ailaNav').style.display = 'flex';
+    loadPdf();
+  }
+
+  // ============================================================
+  // PDF LOADING AND RENDERING
+  // ============================================================
+  function loadPdf() {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    pdfjsLib.getDocument({
+      url: COURSE.pdfUrl,
+      withCredentials: false
+    }).promise
+      .then(function(pdf) {
+        pdfDoc = pdf;
+        renderSlide(currentSlide);
+        updateSlideIndicator();
+      })
+      .catch(function(error) {
+        console.error('PDF load error:', error);
+        const canvas = document.getElementById('ailaPdfCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#333';
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Could not load the course PDF.', canvas.width/2, canvas.height/2 - 10);
+        ctx.fillText('Check the console for details.', canvas.width/2, canvas.height/2 + 15);
+      });
+  }
+
+  // ============================================================
+  // MEDIA LINKS -> OVERLAY
+  // Video links, audio links, and image links all open over the
+  // slide. The learner never leaves the course.
+  // ============================================================
+  function toVideoEmbed(url) {
+    var m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/);
+    if (m) return 'https://www.youtube.com/embed/' + m[1] + '?autoplay=1';
+    m = url.match(/vimeo\.com\/(?:video\/)?(\d+)(?:\/([a-zA-Z0-9]+))?/);
+    if (m) return 'https://player.vimeo.com/video/' + m[1] +
+      (m[2] ? '?h=' + m[2] + '&autoplay=1' : '?autoplay=1');
+    return null;
+  }
+  function toAudioUrl(url) {
+    return /\.(mp3|m4a|wav|ogg)(\?[^ ]*)?$/i.test(url) ? url : null;
+  }
+  function toPodcastEmbed(url) {
+    // Omny.fm episode pages -> their wide audio embed player.
+    var m = url.match(/^https?:\/\/omny\.fm\/shows\/[^?#\s]+/i);
+    if (!m) return null;
+    var base = m[0].replace(/\/embed$/i, '').replace(/\/$/, '');
+    return base + '/embed?media=Audio&size=Wide';
+  }
+  function toImageUrl(url) {
+    return /\.(gif|png|jpe?g|webp)(\?[^ ]*)?$/i.test(url) ? url : null;
+  }
+  function toQuizUrl(url) {
+    return /language-teammate\.vercel\.app\/[^ ]*\.html/i.test(url) ? url : null;
+  }
+  function openVideoOverlay(embedUrl) {
+    document.getElementById('ailaVideoOverlayFrame').src = embedUrl;
+    document.getElementById('ailaVideoOverlay').classList.add('open');
+  }
+  function openQuizOverlay(quizUrl) {
+    var box = document.querySelector('.aila-video-overlay-box');
+    box.classList.add('form');
+    document.getElementById('ailaVideoOverlayFrame').src = quizUrl;
+    document.getElementById('ailaVideoOverlay').classList.add('open');
+  }
+  function openAudioOverlay(audioUrl) {
+    var box = document.querySelector('.aila-video-overlay-box');
+    var player = document.getElementById('ailaAudioOverlayPlayer');
+    box.classList.add('audio');
+    player.src = audioUrl;
+    document.getElementById('ailaVideoOverlay').classList.add('open');
+    player.play().catch(function() {});
+  }
+  function openPodcastOverlay(embedUrl) {
+    var box = document.querySelector('.aila-video-overlay-box');
+    box.classList.add('podcast');
+    document.getElementById('ailaVideoOverlayFrame').src = embedUrl;
+    document.getElementById('ailaVideoOverlay').classList.add('open');
+  }
+  function openImageOverlay(imageUrl) {
+    var box = document.querySelector('.aila-video-overlay-box');
+    var pic = document.getElementById('ailaImageOverlayPic');
+    box.classList.add('image');
+    pic.src = imageUrl;
+    document.getElementById('ailaVideoOverlay').classList.add('open');
+  }
+  function closeVideoOverlay() {
+    var box = document.querySelector('.aila-video-overlay-box');
+    var player = document.getElementById('ailaAudioOverlayPlayer');
+    var pic = document.getElementById('ailaImageOverlayPic');
+    document.getElementById('ailaVideoOverlay').classList.remove('open');
+    document.getElementById('ailaVideoOverlayFrame').src = '';
+    player.pause();
+    player.removeAttribute('src');
+    pic.removeAttribute('src');
+    box.classList.remove('audio');
+    box.classList.remove('form');
+    box.classList.remove('image');
+    box.classList.remove('podcast');
+    box.classList.remove('photo');
+  }
+  document.getElementById('ailaVideoOverlayClose').addEventListener('click', closeVideoOverlay);
+  document.getElementById('ailaVideoOverlayPop').addEventListener('click', function() {
+    var frameSrc = document.getElementById('ailaVideoOverlayFrame').src;
+    var picSrc = document.getElementById('ailaImageOverlayPic').getAttribute('src');
+    var src = frameSrc || picSrc;
+    if (src) { window.open(src, '_blank', 'noopener'); closeVideoOverlay(); }
+  });
+  document.getElementById('ailaVideoOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeVideoOverlay();
+  });
+  // Remedial jump: the quiz asks the page to go to a slide for review.
+  window.addEventListener('message', function(ev) {
+    var d = ev.data;
+    if (d && d.type === 'aila-goto-slide') {
+      var n = parseInt(d.slide, 10);
+      if (n >= 1 && n <= COURSE.totalSlides) {
+        closeVideoOverlay();
+        currentSlide = n;
+        renderSlide(n);
+        updateSlideIndicator();
+      }
+    }
+  });
+
+  // ============================================================
+  // LANGUAGE LAYER — translate the slide's text lines and paint the
+  // translation in place over the canvas (positions come from the
+  // same data that powers the selectable text layer).
+  // ============================================================
+  var TRANSLATE_URL = 'https://language-teammate.vercel.app/api/translate';
+  var currentLang = 'en';
+  var translationCache = {};   // { lang: { slideNum: [translated lines] } }
+  var translateToken = 0;      // ignore stale responses after fast slide flips
+
+  document.getElementById('ailaLangSelect').addEventListener('change', function(e) {
+    currentLang = e.target.value;
+    renderSlide(currentSlide);
+    // v5.0: the voice instructor follows the slide language.
+    if (voiceActive) restartVoiceInLanguage(currentLang);
+    else setAgentLanguage(currentLang);
+  });
+
+  // ============================================================
+  // SPOKEN LANGUAGE (v5.0) — the same dropdown sets the instructor's
+  // spoken language. The widget reads the overrides when a call
+  // starts, so a change during a live call ends it and starts a new
+  // one in the new language (with a translated greeting).
+  // ============================================================
+  var LANG_NAMES = { en: 'English', es: 'Español', fr: 'Français', de: 'Deutsch',
+    pt: 'Português', it: 'Italiano', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe',
+    vi: 'Tiếng Việt', ru: 'Русский', ja: '日本語', zh: '中文', ko: '한국어',
+    hi: 'हिन्दी', ar: 'العربية' };
+  // v7.1: the greeting depends on the mode. Translator mode keeps it to
+  // one short line so the traveler can start talking right away.
+  var TRANSLATOR_GREETING = 'Ready. Tell me what to say.';
+  var PHRASE_GREETING = "Ready? Let's do today's phrase.";
+  var greetingCache = { 'en|course': COURSE.firstMessage, 'en|translator': TRANSLATOR_GREETING,
+                        'en|phrase': PHRASE_GREETING };
+
+  function baseGreeting() {
+    if (startMode === 'translator') return TRANSLATOR_GREETING;
+    if (startMode === 'phrase') return PHRASE_GREETING;
+    return COURSE.firstMessage;
+  }
+
+  function setAgentLanguage(lang, done) {
+    var w = document.querySelector('elevenlabs-convai');
+    if (!w) { if (done) done(); return; }
+    w.setAttribute('override-language', lang);
+    var key = lang + '|' + startMode;
+    var base = baseGreeting();
+    if (greetingCache[key]) {
+      w.setAttribute('override-first-message', greetingCache[key]);
+      if (done) done();
+      return;
+    }
+    fetch(TRANSLATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_lang: lang, lines: [base] })
+    })
+      .then(function(r) { if (!r.ok) throw new Error('translate failed'); return r.json(); })
+      .then(function(data) {
+        var g = (data.lines && data.lines[0]) ? data.lines[0] : base;
+        greetingCache[key] = g;
+        w.setAttribute('override-first-message', g);
+        if (done) done();
+      })
+      .catch(function() {
+        w.setAttribute('override-first-message', base);
+        if (done) done();
+      });
+  }
+
+  function restartVoiceInLanguage(lang) {
+    showCopyToast('Restarting the instructor in ' + (LANG_NAMES[lang] || lang) + '…');
+    var ender = widgetEndButton();
+    if (ender) ender.click();
+    voiceActive = false;
+    updateVoiceLabel();
+    updateReadyButton();
+    ensureAgent(startMode);           // v9.0
+    setAgentLanguage(lang, function() {
+      setTimeout(function() {
+        autoStartAgent(0);
+        voiceActive = true;
+        updateVoiceLabel();
+        updateReadyButton();
+        updatePracticeButton();
+      }, 1500);
+    });
+  }
+
+  function buildLines(textContent, viewport) {
+    // Group the PDF's text runs into visual lines with device coords.
+    // v5.2 (column-aware): text at the same height is first collected
+    // into a row, then the row is split wherever there is a wide
+    // horizontal gap — so side-by-side columns become separate lines
+    // instead of one long glued-together line.
+    var rows = [];
+    textContent.items.forEach(function(item) {
+      if (!item.str || !item.str.trim()) return;
+      var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+      var fontH = Math.hypot(tx[2], tx[3]) || 12;
+      var x = tx[4], y = tx[5];
+      var w = (item.width || 0) * (viewport.scale || 1);
+      var row = null;
+      for (var i = 0; i < rows.length; i++) {
+        if (Math.abs(rows[i].y - y) < fontH * 0.5) { row = rows[i]; break; }
+      }
+      if (!row) { row = { y: y, parts: [] }; rows.push(row); }
+      row.parts.push({ x: x, w: w, fontH: fontH, str: item.str });
+    });
+    var lines = [];
+    rows.forEach(function(row) {
+      row.parts.sort(function(a, b) { return a.x - b.x; });
+      var seg = null;
+      row.parts.forEach(function(p) {
+        // A gap wider than about 2.5 letters' height means a new column.
+        if (seg && (p.x - seg.endX) > seg.fontH * 2.5) { lines.push(seg); seg = null; }
+        if (!seg) seg = { y: row.y, x: p.x, endX: p.x + p.w, fontH: p.fontH, parts: [] };
+        seg.endX = Math.max(seg.endX, p.x + p.w);
+        seg.fontH = Math.max(seg.fontH, p.fontH);
+        seg.parts.push(p);
+      });
+      if (seg) lines.push(seg);
+    });
+    lines.forEach(function(line) {
+      line.str = line.parts.map(function(p) { return p.str; }).join(' ')
+        .replace(/\s+/g, ' ').trim();
+      line.w = line.endX - line.x;
+    });
+    lines.sort(function(a, b) { return (a.y - b.y) || (a.x - b.x); });
+    return lines.filter(function(l) { return l.str; }).slice(0, 80);
+  }
+
+  function sampleBg(ctx, line, canvas) {
+    // v5.4: guess the background color by sampling several spots around
+    // the text (above, below, left, right) and taking the middle value,
+    // so a stray underline or rule next to the text can't fool it.
+    try {
+      var h = line.fontH;
+      var spots = [
+        [line.x,                 line.y - h * 1.5],   // above
+        [line.x + line.w * 0.5,  line.y - h * 1.5],   // above, middle
+        [line.x,                 line.y + h * 0.6],   // below
+        [line.x + line.w * 0.5,  line.y + h * 0.6],   // below, middle
+        [line.x - h * 0.8,       line.y - h * 0.4],   // left
+        [line.x + line.w + h*0.8, line.y - h * 0.4]   // right
+      ];
+      var rs = [], gs = [], bs = [];
+      for (var s = 0; s < spots.length; s++) {
+        var sx = Math.round(spots[s][0]), sy = Math.round(spots[s][1]);
+        if (sx < 0 || sy < 0 || sx + 3 >= canvas.width || sy + 3 >= canvas.height) continue;
+        var data = ctx.getImageData(sx, sy, 3, 3).data;
+        var r = 0, g = 0, b = 0, n = data.length / 4;
+        for (var i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; }
+        rs.push(r / n); gs.push(g / n); bs.push(b / n);
+      }
+      if (!rs.length) return { r: 255, g: 255, b: 255 };
+      var mid = function(a) { a.sort(function(p, q) { return p - q; }); return a[Math.floor(a.length / 2)]; };
+      return { r: mid(rs), g: mid(gs), b: mid(bs) };
+    } catch (e) {
+      return { r: 255, g: 255, b: 255 };
+    }
+  }
+
+  function paintTranslation(lines, translated) {
+    var canvas = document.getElementById('ailaPdfCanvas');
+    var ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+    var FONT = 'px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif';
+    var LINE_GAP = 1.25;   // spacing between wrapped lines (x font size)
+    var FLOOR = 0.8;       // a group never shrinks below 80% of original
+    var MIN = 0.55;        // absolute last-resort minimum
+
+    // v5.5: does a pixel look different from the background? (box edge)
+    function differs(px, off, bg) {
+      return Math.abs(px[off] - bg.r) + Math.abs(px[off+1] - bg.g) +
+             Math.abs(px[off+2] - bg.b) > 60;
+    }
+    // v5.3: room to the RIGHT — a line may grow until it meets the next
+    // text on the same row, or the slide edge.
+    // v5.5: ...or the edge of the box it sits in (found by scanning
+    // pixels rightward until the color stops matching the background).
+    function roomRight(L, bg) {
+      var limit = canvas.width - L.fontH * 0.75;
+      for (var k = 0; k < lines.length; k++) {
+        var o = lines[k];
+        if (o === L) continue;
+        if (Math.abs(o.y - L.y) < Math.max(o.fontH, L.fontH) && o.x > L.x) {
+          limit = Math.min(limit, o.x - L.fontH);
+        }
+      }
+      try {
+        var sx = Math.round(L.x + L.w + 3);
+        var sy = Math.round(L.y - L.fontH * 0.4);
+        var len = Math.round(limit - sx);
+        if (len > 2 && sy >= 0 && sy < canvas.height) {
+          var strip = ctx.getImageData(sx, sy, len, 1).data;
+          for (var p = 0; p < len; p++) {
+            if (differs(strip, p * 4, bg)) { limit = Math.min(limit, sx + p - L.fontH * 0.6); break; }
+          }
+        }
+      } catch (e) {}
+      return Math.max(limit - L.x, L.w);
+    }
+    // v5.3: room BELOW — how many extra wrapped lines fit before the next
+    // text in this column (or the slide bottom). Capped at 3.
+    // v5.5: ...or the bottom edge of the box (found by scanning down).
+    function extraLinesBelow(L, maxW, bg) {
+      var nextTop = canvas.height - L.fontH * 0.5;
+      for (var k = 0; k < lines.length; k++) {
+        var o = lines[k];
+        if (o === L || o.y <= L.y) continue;
+        var overlap = o.x < L.x + maxW && (o.x + o.w) > L.x;
+        if (overlap) nextTop = Math.min(nextTop, o.y - o.fontH * 1.05);
+      }
+      try {
+        var sx = Math.round(L.x + Math.min(L.w, L.fontH * 2) * 0.5);
+        var sy = Math.round(L.y + L.fontH * 0.5);
+        var len = Math.round(nextTop - sy);
+        if (len > 2 && sx >= 0 && sx < canvas.width) {
+          var strip = ctx.getImageData(sx, sy, 1, len).data;
+          for (var p = 0; p < len; p++) {
+            if (differs(strip, p * 4, bg)) { nextTop = Math.min(nextTop, sy + p - L.fontH * 0.3); break; }
+          }
+        }
+      } catch (e) {}
+      var room = nextTop - L.y - L.fontH * 0.4;
+      return Math.max(0, Math.min(3, Math.floor(room / (L.fontH * LINE_GAP))));
+    }
+    function wrapWords(text, size, maxW) {
+      ctx.font = size + FONT;
+      var words = text.split(' '), out = [], cur = '';
+      for (var w = 0; w < words.length; w++) {
+        var t = cur ? cur + ' ' + words[w] : words[w];
+        if (!cur || ctx.measureText(t).width <= maxW) cur = t;
+        else { out.push(cur); cur = words[w]; }
+      }
+      if (cur) out.push(cur);
+      return out;
+    }
+    function rowsFit(rows, size, maxW, allowed) {
+      if (rows.length > allowed) return false;
+      ctx.font = size + FONT;
+      for (var r = 0; r < rows.length; r++) {
+        if (ctx.measureText(rows[r]).width > maxW) return false;
+      }
+      return true;
+    }
+
+    // Pass 1: the size each line needs to fit its real room (never
+    // below the floor).
+    var fitted = [], avail = [], bgs = [];
+    for (var i = 0; i < lines.length; i++) {
+      var L = lines[i];
+      var text = translated[i];
+      if (!text) { fitted.push(0); avail.push(0); bgs.push(null); continue; }
+      var bgi = sampleBg(ctx, L, canvas);   // v5.5: sampled BEFORE any painting
+      bgs.push(bgi);
+      var maxW = roomRight(L, bgi);
+      avail.push(maxW);
+      var size = L.fontH;
+      ctx.font = size + FONT;
+      while (size > L.fontH * FLOOR && ctx.measureText(text).width > maxW) {
+        size -= 1;
+        ctx.font = size + FONT;
+      }
+      fitted.push(size);
+    }
+
+    // Pass 2: lines that share a size on the original slide are one
+    // group (title, body, captions...) and are drawn at ONE size.
+    var groupMin = {};
+    for (var g = 0; g < lines.length; g++) {
+      if (!fitted[g]) continue;
+      var key = Math.round(lines[g].fontH);
+      if (!(key in groupMin) || fitted[g] < groupMin[key]) groupMin[key] = fitted[g];
+    }
+
+    // Pass 3: draw. A line that still does not fit is WRAPPED onto the
+    // empty space below it; only if there is no room does it shrink.
+    for (var j = 0; j < lines.length; j++) {
+      var L2 = lines[j];
+      var text2 = translated[j];
+      if (!text2) continue;
+      var useSize = groupMin[Math.round(L2.fontH)] || fitted[j] || L2.fontH;
+      var maxW2 = avail[j];
+      var bg = bgs[j];
+      var allowed = 1 + extraLinesBelow(L2, maxW2, bg);
+      var rows = wrapWords(text2, useSize, maxW2);
+      while (!rowsFit(rows, useSize, maxW2, allowed) && useSize > L2.fontH * MIN) {
+        useSize -= 1;
+        rows = wrapWords(text2, useSize, maxW2);
+      }
+      // Cover the original text.
+      ctx.fillStyle = 'rgb(' + Math.round(bg.r) + ',' + Math.round(bg.g) + ',' + Math.round(bg.b) + ')';
+      ctx.fillRect(L2.x - 2, L2.y - L2.fontH * 1.05, L2.w + 4, L2.fontH * 1.45);
+      // Pick a text color that contrasts with the background.
+      var lum = 0.299 * bg.r + 0.587 * bg.g + 0.114 * bg.b;
+      ctx.fillStyle = (lum > 140) ? '#111111' : '#ffffff';
+      ctx.font = useSize + FONT;
+      for (var r2 = 0; r2 < rows.length; r2++) {
+        ctx.fillText(rows[r2], L2.x, L2.y + r2 * useSize * LINE_GAP);
+      }
+    }
+    ctx.restore();
+  }
+
+  function applyLanguage(lines, slideNum) {
+    if (currentLang === 'en' || !lines.length) return;
+    var token = ++translateToken;
+    var cache = translationCache[currentLang] = translationCache[currentLang] || {};
+    if (cache[slideNum]) {
+      if (token === translateToken && slideNum === currentSlide) {
+        paintTranslation(lines, cache[slideNum]);
+      }
+      return;
+    }
+    var label = document.getElementById('ailaCourseLabel');
+    var original = label.textContent;
+    label.textContent = original + '  ·  Translating…';
+    fetch(TRANSLATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target_lang: currentLang,
+        lines: lines.map(function(l) { return l.str; })
+      })
+    })
+      .then(function(r) { if (!r.ok) throw new Error('translate failed'); return r.json(); })
+      .then(function(data) {
+        label.textContent = original;
+        if (!data.lines) return;
+        cache[slideNum] = data.lines;
+        if (token === translateToken && slideNum === currentSlide) {
+          paintTranslation(lines, data.lines);
+        }
+      })
+      .catch(function() {
+        label.textContent = original;
+      });
+  }
+
+  // ============================================================
+  // CLICK-TO-COPY (v4.9) — click any text block on a slide and the
+  // page copies just that block: the lines that share the same left
+  // edge, top to bottom, with no big gaps. A drag still selects
+  // text the normal way; links still open.
+  // ============================================================
+  var currentLines = [];          // text lines of the slide on screen
+  var copyToastTimer = null;
+  var downX = 0, downY = 0;       // where the press started (click vs drag)
+
+  function showCopyToast(msg) {
+    var t = document.getElementById('ailaCopyToast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(copyToastTimer);
+    copyToastTimer = setTimeout(function() { t.classList.remove('show'); }, 1800);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function(resolve, reject) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) resolve(); else reject(new Error('copy failed'));
+      } catch (e) { reject(e); }
+    });
+  }
+
+  function blockAt(px, py) {
+    // Which line was clicked?
+    var base = null;
+    for (var i = 0; i < currentLines.length; i++) {
+      var l = currentLines[i];
+      if (px >= l.x - 4 && px <= l.x + l.w + 4 &&
+          py >= l.y - l.fontH * 1.1 && py <= l.y + l.fontH * 0.35) { base = l; break; }
+    }
+    if (!base) return null;
+    // Keep only lines that share its left edge (same column/box).
+    function sameEdge(a, b) { return Math.abs(a.x - b.x) < Math.max(a.fontH, b.fontH) * 1.5; }
+    function closeBelow(a, b) { return (b.y - a.y) < Math.max(a.fontH, b.fontH) * 2.2; }
+    var col = currentLines.filter(function(l) { return sameEdge(l, base); });
+    var idx = col.indexOf(base);
+    var start = idx, end = idx;
+    while (start > 0 && closeBelow(col[start - 1], col[start])) start--;
+    while (end < col.length - 1 && closeBelow(col[end], col[end + 1])) end++;
+    return col.slice(start, end + 1).map(function(l) { return l.str; }).join('\n');
+  }
+
+  (function() {
+    var pageDivEl = document.getElementById('ailaPdfPage');
+    pageDivEl.addEventListener('mousedown', function(e) { downX = e.clientX; downY = e.clientY; });
+    pageDivEl.addEventListener('touchstart', function(e) {
+      var t = e.touches && e.touches[0];
+      if (t) { downX = t.clientX; downY = t.clientY; }
+    }, { passive: true });
+    pageDivEl.addEventListener('click', function(e) {
+      // A drag (moved more than a few pixels) is a normal selection, not a copy.
+      if (Math.abs(e.clientX - downX) > 5 || Math.abs(e.clientY - downY) > 5) return;
+      var sel = window.getSelection ? window.getSelection().toString() : '';
+      if (sel && sel.trim()) return;
+      if (e.target && e.target.closest && e.target.closest('a')) return;  // links still work
+      var rect = document.getElementById('ailaPdfCanvas').getBoundingClientRect();
+      var text = blockAt(e.clientX - rect.left, e.clientY - rect.top);
+      if (!text) return;
+      copyText(text)
+        .then(function() { showCopyToast('Copied!'); })
+        .catch(function() { showCopyToast('Could not copy — drag to select the text instead.'); });
+    });
+  })();
+
+  function renderSlide(slideNum) {
+    if (!pdfDoc || slideNum < 1 || slideNum > COURSE.totalSlides) return;
+
+    pdfDoc.getPage(slideNum).then(function(page) {
+      const canvas = document.getElementById('ailaPdfCanvas');
+      const pageDiv = document.getElementById('ailaPdfPage');
+      const textLayerDiv = document.getElementById('ailaTextLayer');
+      const container = document.getElementById('ailaPdfContainer');
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      const unscaledViewport = page.getViewport({ scale: 1 });
+      const scale = Math.min(
+        containerWidth / unscaledViewport.width,
+        containerHeight / unscaledViewport.height
+      );
+      const viewport = page.getViewport({ scale: scale });
+
+      // Size the page wrapper to match the slide so the text lines up
+      pageDiv.style.width = viewport.width + 'px';
+      pageDiv.style.height = viewport.height + 'px';
+
+      // Draw the slide picture onto the canvas
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.width = viewport.width + 'px';
+      canvas.style.height = viewport.height + 'px';
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const renderTask = page.render({ canvasContext: ctx, viewport: viewport });
+
+      // Build the invisible, selectable text layer on top of the picture
+      textLayerDiv.innerHTML = '';
+      textLayerDiv.style.width = viewport.width + 'px';
+      textLayerDiv.style.height = viewport.height + 'px';
+      // REQUIRED by PDF.js 3.x: the text layer must know the zoom level
+      textLayerDiv.style.setProperty('--scale-factor', scale);
+      page.getTextContent().then(function(textContent) {
+        pdfjsLib.renderTextLayer({
+          textContentSource: textContent,
+          container: textLayerDiv,
+          viewport: viewport
+        });
+        // Language layer: once the slide image is drawn, paint the
+        // translation over it (no-op when English is selected).
+        renderTask.promise.then(function() {
+          currentLines = buildLines(textContent, viewport);
+          applyLanguage(currentLines, slideNum);
+        });
+      });
+
+      // Build the clickable link layer (links from the original slides)
+      var linkLayerDiv = document.getElementById('ailaLinkLayer');
+      linkLayerDiv.innerHTML = '';
+      linkLayerDiv.style.width = viewport.width + 'px';
+      linkLayerDiv.style.height = viewport.height + 'px';
+      page.getAnnotations().then(function(annotations) {
+        annotations.forEach(function(annot) {
+          if (annot.subtype !== 'Link' || !annot.url) return;
+          var rect = pdfjsLib.Util.normalizeRect(
+            viewport.convertToViewportRectangle(annot.rect));
+          var a = document.createElement('a');
+          a.style.left = rect[0] + 'px';
+          a.style.top = rect[1] + 'px';
+          a.style.width = (rect[2] - rect[0]) + 'px';
+          a.style.height = (rect[3] - rect[1]) + 'px';
+          a.href = annot.url;
+          a.title = annot.url;
+          var embed = toVideoEmbed(annot.url);
+          var audio = toAudioUrl(annot.url);
+          var quiz = toQuizUrl(annot.url);
+          var image = toImageUrl(annot.url);
+          var podcast = toPodcastEmbed(annot.url);
+          if (podcast) {
+            a.addEventListener('click', function(e) {
+              e.preventDefault();
+              openPodcastOverlay(podcast);
+            });
+          } else if (embed) {
+            a.addEventListener('click', function(e) {
+              e.preventDefault();
+              openVideoOverlay(embed);
+            });
+          } else if (quiz) {
+            a.addEventListener('click', function(e) {
+              e.preventDefault();
+              openQuizOverlay(quiz);
+            });
+          } else if (audio) {
+            a.addEventListener('click', function(e) {
+              e.preventDefault();
+              openAudioOverlay(audio);
+            });
+          } else if (image) {
+            a.addEventListener('click', function(e) {
+              e.preventDefault();
+              openImageOverlay(image);
+            });
+          } else {
+            a.target = '_blank';
+            a.rel = 'noopener';
+          }
+          linkLayerDiv.appendChild(a);
+        });
+      });
+
+      if (slideNum > highestSlideReached) {
+        highestSlideReached = slideNum;
+      }
+      saveProgress();
+      reportSlideSoon();
+    });
+  }
+
+  function updateSlideIndicator() {
+    document.getElementById('ailaSlideIndicator').textContent =
+      'Slide ' + currentSlide + ' of ' + COURSE.totalSlides;
+    document.getElementById('ailaPrevBtn').disabled = (currentSlide <= 1);
+    document.getElementById('ailaNextBtn').disabled = (currentSlide >= COURSE.totalSlides);
+  }
+
+  // ============================================================
+  // RE-FIT SLIDES ON RESIZE OR ROTATION
+  // ============================================================
+  var resizeTimer = null;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      if (pdfDoc && document.getElementById('ailaPdfContainer').style.display !== 'none') {
+        renderSlide(currentSlide);
+      }
+    }, 300);
+  });
+
+  // ============================================================
+  // FULL-SCREEN MODE (slide area) with on-slide arrows
+  // ============================================================
+  var displayEl = document.querySelector('.aila-display');
+  var fakeFs = false;
+  function fsElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || null;
+  }
+  function refitSoon() {
+    setTimeout(function() { if (pdfDoc) renderSlide(currentSlide); }, 150);
+  }
+  function nativeFsAvailable() {
+    return !!(displayEl.requestFullscreen || displayEl.webkitRequestFullscreen);
+  }
+  function enterFakeFs() {
+    fakeFs = true;
+    displayEl.classList.add('fs-fake');
+    displayEl.classList.add('fs-active');
+    refitSoon();
+  }
+  function exitFakeFs() {
+    fakeFs = false;
+    displayEl.classList.remove('fs-fake');
+    displayEl.classList.remove('fs-active');
+    refitSoon();
+  }
+  document.getElementById('ailaFsBtn').addEventListener('click', function() {
+    if (fakeFs) { exitFakeFs(); return; }
+    if (fsElement()) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      return;
+    }
+    if (displayEl.requestFullscreen) {
+      displayEl.requestFullscreen().catch(function() { enterFakeFs(); });
+    } else if (displayEl.webkitRequestFullscreen) {
+      displayEl.webkitRequestFullscreen();
+    } else {
+      // iPhone Safari and others without the fullscreen API
+      enterFakeFs();
+    }
+  });
+  function onFsChange() {
+    var active = !!fsElement();
+    displayEl.classList.toggle('fs-active', active || fakeFs);
+    refitSoon();
+  }
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  document.getElementById('ailaFsExit').addEventListener('click', function() {
+    if (fakeFs) { exitFakeFs(); return; }
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  });
+  document.getElementById('ailaFsPrev').addEventListener('click', function() {
+    document.getElementById('ailaPrevBtn').click();
+  });
+  document.getElementById('ailaFsNext').addEventListener('click', function() {
+    document.getElementById('ailaNextBtn').click();
+  });
+
+  // ============================================================
+  // VOICE TOGGLE — presses the hidden widget's own button, which
+  // starts the call when idle and ends it during a call.
+  // ============================================================
+  // ============================================================
+  // VOICE STATE — the page remembers whether IT started/stopped the
+  // instructor, instead of trying to read the widget's internals
+  // (the widget keeps ghost buttons around that fooled detection).
+  // ============================================================
+  var voiceActive = false;
+
+  function widgetEndButton() {
+    try {
+      var w = document.querySelector('elevenlabs-convai');
+      var buttons = w && w.shadowRoot ?
+        Array.prototype.slice.call(w.shadowRoot.querySelectorAll('button')) : [];
+      for (var i = 0; i < buttons.length; i++) {
+        var label = (buttons[i].getAttribute('aria-label') || '') + ' ' +
+                    (buttons[i].title || '') + ' ' + (buttons[i].textContent || '');
+        if (/end|hang|disconnect/i.test(label)) return buttons[i];
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function updateVoiceLabel() {
+    var btn = document.getElementById('ailaVoiceBtn');
+    btn.textContent = voiceActive ? '⏹ Stop Course' : '🔊 Start Course';
+    btn.blur();  // clear the stuck "pressed" coloring on mobile
+  }
+
+  document.getElementById('ailaVoiceBtn').addEventListener('click', function() {
+    try {
+      if (voiceActive) {
+        var ender = widgetEndButton();
+        if (ender) ender.click();   // hidden End buttons still work
+        voiceActive = false;
+      } else {
+        // v4.8: secure the microphone first, then start.
+        ensureAgent(startMode);       // v9.0
+        updateWidgetVars();
+        requestMicThen(function() {
+          autoStartAgent(0);
+        });
+        voiceActive = true;
+      }
+    } catch (e) {
+      console.warn('voice toggle failed', e);
+    }
+    updateVoiceLabel();
+    updateReadyButton();
+  });
+
+  // ============================================================
+  // CONNECTION WATCH (v6.2) — if the session drops mid-course (VPN,
+  // network, throttled tab), show a Reconnect banner. Reconnecting
+  // starts a fresh session and the learner-memory variables steer the
+  // teacher straight back to the current slide.
+  // ============================================================
+  var lostChecks = 0;
+  function showReconnect() { document.getElementById('ailaReconnToast').classList.add('show'); }
+  function hideReconnect() { document.getElementById('ailaReconnToast').classList.remove('show'); }
+  setInterval(function() {
+    try {
+      if (!voiceActive) { lostChecks = 0; hideReconnect(); return; }
+      if (widgetEndButton()) { lostChecks = 0; hideReconnect(); return; }
+      lostChecks++;                       // active call but no End button
+      if (lostChecks >= 2) showReconnect();   // ~6s of confirmed loss
+    } catch (e) { /* keep watching */ }
+  }, 3000);
+  document.getElementById('ailaReconnBtn').addEventListener('click', function() {
+    hideReconnect();
+    lostChecks = 0;
+    // Steer the fresh session to the slide on screen.
+    learnerProfile = learnerProfile || {};
+    learnerProfile.last_slide = currentSlide;
+    ensureAgent(startMode);           // v9.0
+    updateWidgetVars();
+    requestMicThen(function() { autoStartAgent(0); });
+    voiceActive = true;
+    updateVoiceLabel();
+  });
+
+  // ============================================================
+  // PHOTO TRANSLATOR (v7.0) — the camera button opens the phone's
+  // camera (or a file picker on a computer). The photo is shrunk in
+  // the browser, sent to OUR Vercel endpoint, read by Claude, and the
+  // English text is shown over the slide.
+  // ============================================================
+  var PHOTO_URL = 'https://language-teammate.vercel.app/api/translate-photo';
+  var PHOTO_MAX_SIDE = 1600;   // pixels — keeps the upload small and fast
+
+  function openPhotoOverlay(text) {
+    var box = document.querySelector('.aila-video-overlay-box');
+    box.classList.add('photo');
+    document.getElementById('ailaPhotoText').textContent = text;
+    document.getElementById('ailaVideoOverlay').classList.add('open');
+  }
+
+  function shrinkImage(file) {
+    return new Promise(function(resolve, reject) {
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        var scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(w, h));
+        var c = document.createElement('canvas');
+        c.width = Math.round(w * scale);
+        c.height = Math.round(h * scale);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+      img.src = url;
+    });
+  }
+
+  document.getElementById('ailaPhotoBtn').addEventListener('click', function() {
+    document.getElementById('ailaPhotoInput').click();
+  });
+
+  document.getElementById('ailaPhotoInput').addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    handlePhotoFile(file);
+  });
+  function handlePhotoFile(file) {
+    var btn = document.getElementById('ailaPhotoBtn');
+    var btn2 = document.getElementById('ailaTrPhoto');
+    btn.disabled = true; btn2.disabled = true;
+    btn.textContent = '📷 Reading…'; btn2.textContent = '📷 Reading…';
+    shrinkImage(file)
+      .then(function(dataUrl) {
+        return fetch(PHOTO_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: dataUrl.split(',')[1],
+            media_type: 'image/jpeg',
+            email: readPassEmail(),
+            // v7.5: answer in the traveler's own language (first page choice)
+            target_lang: currentLang === 'en' ? 'en' : (LANG_NAMES[currentLang] || 'English')
+          })
+        });
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.ok && data.text) openPhotoOverlay(data.text);
+        else openPhotoOverlay('Sorry, I could not read that photo. ' +
+             (data && data.error ? data.error : 'Please try again with better light.'));
+      })
+      .catch(function() {
+        openPhotoOverlay('Could not reach the photo translator. Check your internet signal and try again.');
+      })
+      .then(function() {
+        btn.disabled = false; btn2.disabled = false;
+        btn.textContent = '📷 Translate a photo'; btn2.textContent = '📷 Translate a photo';
+      });
+  }
+
+  document.getElementById('ailaPhotoCopy').addEventListener('click', function() {
+    var text = document.getElementById('ailaPhotoText').textContent || '';
+    copyText(text)
+      .then(function() { showCopyToast('Copied!'); })
+      .catch(function() { showCopyToast('Could not copy.'); });
+  });
+
+  // ============================================================
+  // DOCUMENT LINK INTERCEPT — watch the agent's transcript for
+  // saved-document links and offer them over the slide (the
+  // transcript itself is hidden on phones and its links aren't live).
+  // ============================================================
+  var seenDocLinks = {};
+  var latestDocLink = null;
+  var DOC_LINK_RE = /https?:\/\/docs\.(?:esourceaigroup|esourceu)\.com\/[^\s"'<>)\]]+/g;
+
+  setInterval(function() {
+    try {
+      var w = document.querySelector('elevenlabs-convai');
+      if (!w || !w.shadowRoot) return;
+      var text = w.shadowRoot.textContent || '';
+      var matches = text.match(DOC_LINK_RE) || [];
+      for (var i = 0; i < matches.length; i++) {
+        var url = matches[i].replace(/[.,;]+$/, '');
+        if (!seenDocLinks[url]) {
+          seenDocLinks[url] = true;
+          latestDocLink = url;
+          document.getElementById('ailaDocToast').classList.add('show');
+        }
+      }
+    } catch (e) { /* keep watching */ }
+  }, 2000);
+
+  document.getElementById('ailaDocOpen').addEventListener('click', function() {
+    if (latestDocLink) openQuizOverlay(latestDocLink);
+  });
+  document.getElementById('ailaDocDismiss').addEventListener('click', function() {
+    document.getElementById('ailaDocToast').classList.remove('show');
+  });
+
+  // ============================================================
+  // NAVIGATION CONTROLS
+  // ============================================================
+  document.getElementById('ailaPrevBtn').addEventListener('click', function() {
+    if (currentSlide > 1) {
+      currentSlide--;
+      renderSlide(currentSlide);
+      updateSlideIndicator();
+    }
+  });
+
+  document.getElementById('ailaNextBtn').addEventListener('click', function() {
+    if (currentSlide < COURSE.totalSlides) {
+      currentSlide++;
+      renderSlide(currentSlide);
+      updateSlideIndicator();
+    }
+  });
+
+  document.getElementById('ailaSectionJump').addEventListener('change', function(e) {
+    const target = parseInt(e.target.value);
+    if (target >= 1 && target <= COURSE.totalSlides) {
+      currentSlide = target;
+      renderSlide(currentSlide);
+      updateSlideIndicator();
+    }
+    e.target.value = '';
+  });
+
+  document.getElementById('ailaSyncBtn').addEventListener('click', function() {
+    alert(
+      'Tell Joe out loud: "I just moved to slide ' + currentSlide + '."\n\n' +
+      'Joe will update his awareness of your current slide.'
+    );
+  });
+
+  // ============================================================
+  // RESUME PROGRESS (browser localStorage)
+  // ============================================================
+  function saveProgress() {
+    try {
+      localStorage.setItem('lt_progress_' + COURSE.id, JSON.stringify({
+        lastSlide: currentSlide,
+        highestSlideReached: highestSlideReached,
+        timestamp: Date.now()
+      }));
+    } catch (e) {}
+  }
+
+  // ============================================================
+  // HIDE ACTIVATION CUE AFTER 60 SECONDS
+  // ============================================================
+  setTimeout(function() {
+    const cue = document.getElementById('ailaActivationCue');
+    if (cue) cue.style.display = 'none';
+  }, 60000);
+
+  // v7.6: load the course from the address (or the placeholder) now that
+  // every variable above exists.
+  applyCourse(courseKey);
+
+  // v7.6: gate wording — "phone" on a phone, "device" everywhere else.
+  (function() {
+    var isPhone = /iPhone|Android.*Mobile|Windows Phone/i.test(navigator.userAgent) ||
+                  (window.matchMedia && window.matchMedia('(max-width: 600px)').matches);
+    var el = document.getElementById('ailaGateOnce');
+    if (el) el.textContent = "You'll only need to do this about once a week on this " +
+                             (isPhone ? 'phone' : 'device') + '.';
+  })();
+
+  // ============================================================
+  // ADD TO HOME SCREEN (v10.0)
+  // Shown on the language popover on every visit until the page is
+  // running as an installed app. "Not now" hides it for one day.
+  // Android/Chrome: real install prompt. iPhone: step-by-step sheet.
+  // ============================================================
+  (function() {
+    var installBox = document.getElementById('ailaInstall');
+    var deferredPrompt = null;
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                       window.navigator.standalone === true;
+    function snoozed() {
+      try { var t = parseInt(localStorage.getItem('lt_install_snooze') || '0', 10); return Date.now() < t; } catch (e) { return false; }
+    }
+    function refreshInstallBox() {
+      var show = !isStandalone && !snoozed() && (deferredPrompt || isIOS);
+      installBox.classList.toggle('show', !!show);
+    }
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      refreshInstallBox();
+    });
+    window.addEventListener('appinstalled', function() {
+      deferredPrompt = null;
+      installBox.classList.remove('show');
+      showCopyToast('Installed! Look for Teammate on your home screen.');
+    });
+    document.getElementById('ailaInstallBtn').addEventListener('click', function() {
+      try { localStorage.setItem('lt_install_tapped', String(Date.now())); } catch (e) {}
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function() { deferredPrompt = null; refreshInstallBox(); });
+        return;
+      }
+      // iPhone (or a browser without the prompt): show the steps.
+      var steps = isIOS ? [
+        'Tap the Share button at the bottom of Safari (the square with an arrow).',
+        'Scroll down and tap "Add to Home Screen".',
+        'Tap "Add" in the top corner. Teammate is now on your home screen.'
+      ] : [
+        'Open your browser\'s menu (the three dots).',
+        'Tap "Add to Home screen" or "Install app".',
+        'Confirm. Teammate is now on your home screen.'
+      ];
+      var ol = document.getElementById('ailaInstallSteps');
+      ol.innerHTML = '';
+      steps.forEach(function(t) { var li = document.createElement('li'); li.textContent = t; ol.appendChild(li); });
+      document.getElementById('ailaInstallSheet').classList.remove('hidden');
+    });
+    document.getElementById('ailaInstallDone').addEventListener('click', function() {
+      document.getElementById('ailaInstallSheet').classList.add('hidden');
+    });
+    document.getElementById('ailaInstallLater').addEventListener('click', function() {
+      try { localStorage.setItem('lt_install_snooze', String(Date.now() + 24 * 3600 * 1000)); } catch (e) {}
+      installBox.classList.remove('show');
+    });
+    refreshInstallBox();
+
+    // Register the service worker (what makes the page installable).
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    }
+  })();
+
+  } // end bootWithLibrary
+
+})();
+</script>
+</body>
+</html>
