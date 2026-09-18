@@ -123,6 +123,8 @@
            Ready to translate, camera, Start the course) replaces the
            slides until the traveler asks for the course. The page sends
            start_mode and target_lang to the agent. Email pass lasts 7 days.
+     v10.7: prices also shown in US dollars — page keeps a daily copy of
+           exchange rates and sends them to api/translate-photo.py
      v10.6: Save button on photo results + Saved list on the translator panel
            (kept on the phone only, works with no signal)
      v10.5: live in-page camera on phones (one tap: Translate); file picker
@@ -1591,7 +1593,7 @@
 
   // v10.3: version stamp. Bump this on every release; the app compares it
   // with the copy on the server and offers a refresh when they differ.
-  var APP_VERSION = '10.6';
+  var APP_VERSION = '10.7';
 
   // ============================================================
   // COURSE LIST
@@ -3617,6 +3619,30 @@
   var PHOTO_URL = 'https://language-teammate.vercel.app/api/translate-photo';
   var PHOTO_MAX_SIDE = 1600;   // pixels — keeps the upload small and fast
 
+  // v10.7: EXCHANGE RATES for "(about $26)" next to each price.
+  // Fetched once a day from a free rate service and kept on the phone,
+  // so this morning's rate is still there at dinner with no signal.
+  var FX_URL = 'https://open.er-api.com/v6/latest/USD';
+  var FX_KEY = 'lt_fx';
+  var FX_MAX_AGE = 24 * 60 * 60 * 1000;   // one day
+  function loadFx() {
+    try { return JSON.parse(localStorage.getItem(FX_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function refreshFx() {
+    var cur = loadFx();
+    if (cur && cur.saved && (Date.now() - cur.saved) < FX_MAX_AGE) return;
+    fetch(FX_URL, { cache: 'no-store' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d && d.result === 'success' && d.rates) {
+          var rec = { rates: d.rates, date: String(d.time_last_update_utc || '').slice(0, 16), saved: Date.now() };
+          try { localStorage.setItem(FX_KEY, JSON.stringify(rec)); } catch (e) {}
+        }
+      })
+      .catch(function() {});
+  }
+  refreshFx();
+
   function openPhotoOverlay(text, canSave) {
     var box = document.querySelector('.aila-video-overlay-box');
     box.classList.remove('saved');
@@ -3718,7 +3744,8 @@
             media_type: 'image/jpeg',
             email: readPassEmail(),
             // v7.5: answer in the traveler's own language (first page choice)
-            target_lang: currentLang === 'en' ? 'en' : (LANG_NAMES[currentLang] || 'English')
+            target_lang: currentLang === 'en' ? 'en' : (LANG_NAMES[currentLang] || 'English'),
+            fx: (function() { var f = loadFx(); return f ? { rates: f.rates, date: f.date } : null; })()   // v10.7
           })
         });
       })
