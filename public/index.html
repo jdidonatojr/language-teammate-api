@@ -123,7 +123,7 @@
            Ready to translate, camera, Start the course) replaces the
            slides until the traveler asks for the course. The page sends
            start_mode and target_lang to the agent. Email pass lasts 7 days.
-     v9.4: live in-page camera on phones (one tap: Translate); file picker
+     v10.5: live in-page camera on phones (one tap: Translate); file picker
            kept for computers and as fallback
      v7.0: LANGUAGE TEAMMATE clone — own repo, own Vercel project, own
            agent, own storage keys; photo translator (camera button ->
@@ -456,7 +456,7 @@
   }
   .aila-photo-button:hover { background: #59359a; }
   .aila-photo-button:disabled { opacity: 0.5; cursor: wait; }
-  /* v9.4: live in-page camera (phones) */
+  /* v10.5: live in-page camera (phones) */
   .aila-cam { position: fixed; inset: 0; background: #000; z-index: 99999; display: none; flex-direction: column; }
   .aila-cam.open { display: flex; }
   .aila-cam video { flex: 1; width: 100%; min-height: 0; object-fit: cover; background: #000; }
@@ -1505,7 +1505,7 @@
 </div>
 </div>
 </div>
-<!-- v9.4: LIVE CAMERA VIEW (phones) — the picture never leaves this page -->
+<!-- v10.5: LIVE CAMERA VIEW (phones) — the picture never leaves this page -->
 <div class="aila-cam" id="ailaCam">
 <video id="ailaCamVideo" autoplay="" playsinline="" muted=""></video>
 <div class="aila-cam-bar">
@@ -1573,7 +1573,7 @@
 
   // v10.3: version stamp. Bump this on every release; the app compares it
   // with the copy on the server and offers a refresh when they differ.
-  var APP_VERSION = '10.4';
+  var APP_VERSION = '10.5';
 
   // ============================================================
   // COURSE LIST
@@ -2317,7 +2317,7 @@
 
   // Camera button on the panel shares the nav button's file input.
   document.getElementById('ailaTrPhoto').addEventListener('click', function() {
-    openCamera();   // v9.4: live camera on phones, file picker elsewhere
+    openCamera();   // v10.5: live camera on phones, file picker elsewhere
   });
 
   // ============================================================
@@ -3624,10 +3624,10 @@
   }
 
   document.getElementById('ailaPhotoBtn').addEventListener('click', function() {
-    openCamera();   // v9.4: live camera on phones, file picker elsewhere
+    openCamera();   // v10.5: live camera on phones, file picker elsewhere
   });
 
-  // v9.4: LIVE CAMERA. On a phone we show the camera inside the page
+  // v10.5: LIVE CAMERA. On a phone we show the camera inside the page
   // and grab one frame when the user taps Translate. On a computer, or
   // if the camera cannot be opened, we fall back to the old file picker.
   var camStream = null;
