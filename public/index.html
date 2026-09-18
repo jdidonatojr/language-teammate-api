@@ -123,6 +123,8 @@
            Ready to translate, camera, Start the course) replaces the
            slides until the traveler asks for the course. The page sends
            start_mode and target_lang to the agent. Email pass lasts 7 days.
+     v10.6: Save button on photo results + Saved list on the translator panel
+           (kept on the phone only, works with no signal)
      v10.5: live in-page camera on phones (one tap: Translate); file picker
            kept for computers and as fallback
      v7.0: LANGUAGE TEAMMATE clone — own repo, own Vercel project, own
@@ -444,6 +446,20 @@
     font-weight: 500;
   }
   .aila-video-overlay-box.photo .aila-photo-copy { display: inline-block; }
+  /* v10.6: Save + Saved list (kept on this phone only) */
+  .aila-photo-save { display: none; margin-top: 14px; margin-left: 8px; background: #6f42c1; color: #fff; border: none; padding: 10px 16px; font-size: 14px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+  .aila-video-overlay-box.photo.cansave .aila-photo-save { display: inline-block; }
+  .aila-video-overlay-box.photo #ailaVideoOverlayPop { display: none; }
+  .aila-saved-list { display: none; font-family: system-ui, -apple-system, Arial, sans-serif; color: #1a1a1a; }
+  .aila-video-overlay-box.saved iframe, .aila-video-overlay-box.saved audio, .aila-video-overlay-box.saved img { display: none; }
+  .aila-video-overlay-box.saved .aila-saved-list { display: block; }
+  .aila-video-overlay-box.saved #ailaVideoOverlayPop { display: none; }
+  .aila-saved-list h3 { margin: 0 0 10px; font-size: 18px; }
+  .aila-saved-item { display: flex; align-items: center; gap: 10px; padding: 10px 6px; border-bottom: 1px solid #ddd; }
+  .aila-saved-item .aila-saved-open { flex: 1; text-align: left; background: none; border: none; font-size: 15px; color: #1a1a1a; cursor: pointer; line-height: 1.4; }
+  .aila-saved-item .aila-saved-open small { display: block; color: #666; font-size: 12px; }
+  .aila-saved-item .aila-saved-del { background: none; border: none; color: #999; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+  .aila-saved-empty { color: #666; font-size: 15px; }
   .aila-photo-button {
     background: #6f42c1;
     color: #fff;
@@ -1443,6 +1459,7 @@
 <button class="aila-tr-ready" id="ailaTrReady">🎤 Ready to translate</button>
 <div class="aila-tr-row">
 <button class="aila-tr-photo" id="ailaTrPhoto">📷 Translate a photo</button>
+<button class="aila-tr-photo" id="ailaTrSaved">📁 Saved</button>
 <button class="aila-tr-course" id="ailaTrCourse">📚 Start the course</button>
 </div>
 <button class="aila-tr-text-btn" id="ailaTrTextBtn">✍️ Translate a text message</button>
@@ -1501,7 +1518,8 @@
 <audio id="ailaAudioOverlayPlayer" controls="controls"></audio>
 <img id="ailaImageOverlayPic" alt="">
 <div class="aila-photo-text" id="ailaPhotoText"></div>
-<button class="aila-photo-copy" id="ailaPhotoCopy">Copy text</button>
+<button class="aila-photo-copy" id="ailaPhotoCopy">Copy text</button><button class="aila-photo-save" id="ailaPhotoSave">💾 Save</button>
+<div class="aila-saved-list" id="ailaSavedList"></div>
 </div>
 </div>
 </div>
@@ -1573,7 +1591,7 @@
 
   // v10.3: version stamp. Bump this on every release; the app compares it
   // with the copy on the server and offers a refresh when they differ.
-  var APP_VERSION = '10.5';
+  var APP_VERSION = '10.6';
 
   // ============================================================
   // COURSE LIST
@@ -2866,6 +2884,8 @@
     box.classList.remove('image');
     box.classList.remove('podcast');
     box.classList.remove('photo');
+    box.classList.remove('cansave');
+    box.classList.remove('saved');
   }
   document.getElementById('ailaVideoOverlayClose').addEventListener('click', closeVideoOverlay);
   document.getElementById('ailaVideoOverlayPop').addEventListener('click', function() {
@@ -3597,9 +3617,11 @@
   var PHOTO_URL = 'https://language-teammate.vercel.app/api/translate-photo';
   var PHOTO_MAX_SIDE = 1600;   // pixels — keeps the upload small and fast
 
-  function openPhotoOverlay(text) {
+  function openPhotoOverlay(text, canSave) {
     var box = document.querySelector('.aila-video-overlay-box');
+    box.classList.remove('saved');
     box.classList.add('photo');
+    if (canSave) box.classList.add('cansave'); else box.classList.remove('cansave');
     document.getElementById('ailaPhotoText').textContent = text;
     document.getElementById('ailaVideoOverlay').classList.add('open');
   }
@@ -3702,7 +3724,7 @@
       })
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (data && data.ok && data.text) openPhotoOverlay(data.text);
+        if (data && data.ok && data.text) openPhotoOverlay(data.text, true);
         else openPhotoOverlay('Sorry, I could not read that photo. ' +
              (data && data.error ? data.error : 'Please try again with better light.'));
       })
@@ -3721,6 +3743,63 @@
       .then(function() { showCopyToast('Copied!'); })
       .catch(function() { showCopyToast('Could not copy.'); });
   });
+
+  // v10.6: SAVED TRANSLATIONS — kept on this phone only (localStorage),
+  // so they can be re-read later with no signal. Newest first.
+  var SAVED_KEY = 'lt_saved_translations';
+  function loadSaved() {
+    try { return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]') || []; } catch (e) { return []; }
+  }
+  function storeSaved(list) {
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  document.getElementById('ailaPhotoSave').addEventListener('click', function() {
+    var text = document.getElementById('ailaPhotoText').textContent || '';
+    if (!text) return;
+    var list = loadSaved();
+    list.unshift({ t: text, d: Date.now() });
+    if (list.length > 200) list.length = 200;
+    storeSaved(list);
+    showCopyToast('Saved!');
+  });
+  function renderSavedList() {
+    var wrap = document.getElementById('ailaSavedList');
+    var list = loadSaved();
+    wrap.innerHTML = '';
+    var h = document.createElement('h3'); h.textContent = 'Saved translations'; wrap.appendChild(h);
+    if (!list.length) {
+      var e = document.createElement('div'); e.className = 'aila-saved-empty';
+      e.textContent = 'Nothing saved yet. After you translate a photo, tap Save to keep it here.';
+      wrap.appendChild(e); return;
+    }
+    list.forEach(function(item, i) {
+      var row = document.createElement('div'); row.className = 'aila-saved-item';
+      var open = document.createElement('button'); open.className = 'aila-saved-open';
+      var first = (item.t || '').replace(/\s+/g, ' ').trim();
+      if (first.length > 60) first = first.slice(0, 60) + '\u2026';
+      var when = new Date(item.d || 0);
+      open.innerHTML = '';
+      open.appendChild(document.createTextNode(first));
+      var sm = document.createElement('small');
+      sm.textContent = when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' +
+                       when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      open.appendChild(sm);
+      open.addEventListener('click', function() { openPhotoOverlay(item.t, false); });
+      var del = document.createElement('button'); del.className = 'aila-saved-del'; del.textContent = '\u2715'; del.title = 'Delete';
+      del.addEventListener('click', function() {
+        var l = loadSaved(); l.splice(i, 1); storeSaved(l); renderSavedList();
+      });
+      row.appendChild(open); row.appendChild(del); wrap.appendChild(row);
+    });
+  }
+  function openSavedList() {
+    var box = document.querySelector('.aila-video-overlay-box');
+    box.classList.remove('photo'); box.classList.remove('cansave');
+    renderSavedList();
+    box.classList.add('saved');
+    document.getElementById('ailaVideoOverlay').classList.add('open');
+  }
+  document.getElementById('ailaTrSaved').addEventListener('click', openSavedList);
 
   // ============================================================
   // DOCUMENT LINK INTERCEPT — watch the agent's transcript for
