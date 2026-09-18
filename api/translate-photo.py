@@ -2,6 +2,10 @@
 # The phone page sends a photo (menu, sign, schedule). Claude reads any
 # script and returns plain English text, one line per item.
 #
+# v10.7: prices are also shown in US dollars, e.g. "€24.00 (about $26)".
+#        The page sends today's exchange rates (it keeps a copy on the
+#        phone). If none arrive, this file fetches them itself.
+#
 # ENV VARS (language-teammate Vercel project):
 #   ANTHROPIC_API_KEY   required
 #   ALLOWED_ORIGINS     optional — comma list of sites allowed to call this,
@@ -17,12 +21,42 @@ from http.server import BaseHTTPRequestHandler
 MODEL = "claude-sonnet-4-6"
 MAX_IMAGE_CHARS = 5_000_000   # the page shrinks photos before sending
 
+FX_URL = "https://open.er-api.com/v6/latest/USD"
+# Common travel currencies we show Claude (keeps the prompt short).
+FX_CODES = ["EUR", "GBP", "JPY", "CNY", "KRW", "MXN", "CAD", "CHF", "SEK", "NOK",
+            "DKK", "PLN", "CZK", "HUF", "TRY", "THB", "VND", "INR", "IDR", "PHP",
+            "MYR", "SGD", "HKD", "TWD", "AUD", "NZD", "BRL", "ARS", "CLP", "COP",
+            "PEN", "ZAR", "EGP", "MAD", "AED", "SAR", "ILS", "RUB", "UAH", "ISK",
+            "RON", "BGN", "HRK", "RSD", "GEL", "KZT", "DOP", "CRC", "GTQ", "JMD"]
+
 
 def allowed_origin(origin):
     allowed = [s.strip() for s in os.environ.get("ALLOWED_ORIGINS", "").split(",") if s.strip()]
     if not allowed:
         return origin or "*"
     return origin if origin in allowed else None
+
+
+def fetch_rates():
+    """Server-side fallback: today's rates, 1 USD = X. Returns (rates, date) or (None, None)."""
+    try:
+        with urllib.request.urlopen(FX_URL, timeout=8) as r:
+            d = json.loads(r.read().decode("utf-8"))
+        if d.get("result") == "success" and isinstance(d.get("rates"), dict):
+            return d["rates"], (d.get("time_last_update_utc") or "")[:16]
+    except Exception:
+        pass
+    return None, None
+
+
+def rate_lines(rates):
+    """Turn a rates dict into short prompt lines for the common currencies."""
+    lines = []
+    for code in FX_CODES:
+        v = rates.get(code)
+        if isinstance(v, (int, float)) and v > 0:
+            lines.append(f"{code}: 1 USD = {v:.4g} {code}")
+    return lines
 
 
 class handler(BaseHTTPRequestHandler):
@@ -79,6 +113,17 @@ class handler(BaseHTTPRequestHandler):
                 self._send(413, {"ok": False, "error": "Photo is too large. Please try again."}, origin)
                 return
 
+            # ---- exchange rates: from the page if sent, else fetch here ----
+            rates = None
+            rates_date = ""
+            fx = data.get("fx")
+            if isinstance(fx, dict) and isinstance(fx.get("rates"), dict):
+                rates = fx["rates"]
+                rates_date = str(fx.get("date") or "")
+            if not rates:
+                rates, rates_date = fetch_rates()
+            fx_lines = rate_lines(rates) if rates else []
+
             lang_name = "English" if target_lang == "en" else target_lang
             instructions = (
                 f"You are a travel translator. Read ALL the text in this photo, in any script or language. "
@@ -101,9 +146,26 @@ class handler(BaseHTTPRequestHandler):
                 "- Do not add greetings, comments, or advice. Just the translation."
             )
 
+            if fx_lines:
+                instructions += (
+                    "\n\nPRICES IN US DOLLARS:\n"
+                    "- After every price, add the approximate US dollar amount in parentheses, "
+                    "like \"€24.00 (about $26)\" or \"¥1,200 (about $8)\". Round to the nearest dollar; "
+                    "under $10, round to the nearest 50 cents.\n"
+                    "- Work out which currency the photo uses from its symbol, its wording, and the language. "
+                    "If a plain \"$\" appears in a non-US country, use that country's dollar (Canada, Australia, etc.).\n"
+                    "- Use ONLY these rates (1 USD = X):\n  " + "\n  ".join(fx_lines) + "\n"
+                    "- If the currency is not in this list, or you cannot tell what it is, leave the price as written "
+                    "with no dollar figure.\n"
+                    "- If the photo has prices, finish with exactly one last line: "
+                    "\"Dollar amounts are approximate" + (f" (rates as of {rates_date})" if rates_date else "") +
+                    ". Your card may add a foreign transaction fee of about 3%.\"\n"
+                    "- If the photo has no prices, do not add that line."
+                )
+
             payload = {
                 "model": MODEL,
-                "max_tokens": 1500,
+                "max_tokens": 1800,
                 "messages": [{
                     "role": "user",
                     "content": [
