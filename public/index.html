@@ -123,6 +123,8 @@
            Ready to translate, camera, Start the course) replaces the
            slides until the traveler asks for the course. The page sends
            start_mode and target_lang to the agent. Email pass lasts 7 days.
+     v9.4: live in-page camera on phones (one tap: Translate); file picker
+           kept for computers and as fallback
      v7.0: LANGUAGE TEAMMATE clone — own repo, own Vercel project, own
            agent, own storage keys; photo translator (camera button ->
            /api/translate-photo -> English text over the slide)
@@ -454,6 +456,15 @@
   }
   .aila-photo-button:hover { background: #59359a; }
   .aila-photo-button:disabled { opacity: 0.5; cursor: wait; }
+  /* v9.4: live in-page camera (phones) */
+  .aila-cam { position: fixed; inset: 0; background: #000; z-index: 99999; display: none; flex-direction: column; }
+  .aila-cam.open { display: flex; }
+  .aila-cam video { flex: 1; width: 100%; min-height: 0; object-fit: cover; background: #000; }
+  .aila-cam-bar { display: flex; gap: 12px; justify-content: center; align-items: center; padding: 14px 12px; background: #111; }
+  .aila-cam-bar button { font-size: 17px; padding: 12px 22px; border: 0; border-radius: 10px; color: #fff; }
+  .aila-cam-shoot { background: #6f42c1; }
+  .aila-cam-shoot:disabled { opacity: 0.5; }
+  .aila-cam-cancel { background: #444; }
   .aila-video-overlay-close {
     position: absolute;
     top: -14px;
@@ -1494,6 +1505,14 @@
 </div>
 </div>
 </div>
+<!-- v9.4: LIVE CAMERA VIEW (phones) — the picture never leaves this page -->
+<div class="aila-cam" id="ailaCam">
+<video id="ailaCamVideo" autoplay="" playsinline="" muted=""></video>
+<div class="aila-cam-bar">
+<button class="aila-cam-cancel" id="ailaCamCancel">✕ Cancel</button>
+<button class="aila-cam-shoot" id="ailaCamShoot">📷 Translate</button>
+</div>
+</div>
 <!-- Slide navigation (hidden until slides are showing) -->
 <div class="aila-nav" id="ailaNav">
 <button class="aila-nav-button" id="ailaPrevBtn">◂ Previous</button>
@@ -2298,7 +2317,7 @@
 
   // Camera button on the panel shares the nav button's file input.
   document.getElementById('ailaTrPhoto').addEventListener('click', function() {
-    document.getElementById('ailaPhotoInput').click();
+    openCamera();   // v9.4: live camera on phones, file picker elsewhere
   });
 
   // ============================================================
@@ -3605,7 +3624,55 @@
   }
 
   document.getElementById('ailaPhotoBtn').addEventListener('click', function() {
-    document.getElementById('ailaPhotoInput').click();
+    openCamera();   // v9.4: live camera on phones, file picker elsewhere
+  });
+
+  // v9.4: LIVE CAMERA. On a phone we show the camera inside the page
+  // and grab one frame when the user taps Translate. On a computer, or
+  // if the camera cannot be opened, we fall back to the old file picker.
+  var camStream = null;
+  function isPhone() {
+    return window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  }
+  function openCamera() {
+    if (!isPhone() || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      document.getElementById('ailaPhotoInput').click();
+      return;
+    }
+    var video = document.getElementById('ailaCamVideo');
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    }).then(function(stream) {
+      camStream = stream;
+      video.srcObject = stream;
+      document.getElementById('ailaCamShoot').disabled = false;
+      document.getElementById('ailaCamShoot').textContent = '\ud83d\udcf7 Translate';
+      document.getElementById('ailaCam').classList.add('open');
+    }).catch(function() {
+      // No permission or no camera: use the phone's own camera app instead.
+      document.getElementById('ailaPhotoInput').click();
+    });
+  }
+  function closeCamera() {
+    document.getElementById('ailaCam').classList.remove('open');
+    var video = document.getElementById('ailaCamVideo');
+    if (camStream) { camStream.getTracks().forEach(function(t) { t.stop(); }); camStream = null; }
+    video.srcObject = null;
+  }
+  document.getElementById('ailaCamCancel').addEventListener('click', closeCamera);
+  document.getElementById('ailaCamShoot').addEventListener('click', function() {
+    var video = document.getElementById('ailaCamVideo');
+    var shoot = document.getElementById('ailaCamShoot');
+    if (!video.videoWidth) return;   // camera not ready yet
+    shoot.disabled = true; shoot.textContent = '\ud83d\udcf7 Reading\u2026';
+    var c = document.createElement('canvas');
+    c.width = video.videoWidth; c.height = video.videoHeight;
+    c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+    c.toBlob(function(blob) {
+      closeCamera();
+      if (blob) handlePhotoFile(blob);
+    }, 'image/jpeg', 0.9);
   });
 
   document.getElementById('ailaPhotoInput').addEventListener('change', function(e) {
