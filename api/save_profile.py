@@ -1,5 +1,5 @@
 """
-Language Teammate — /api/save_profile  (cloned from ESource Course Developer; own store)  (POST, GET)
+ESource Course Developer — /api/save_profile  (POST, GET)
 (Property of Westfield Enterprises — part of the LumaQuest project.)
 
 Learner memory for the course platform (POC):
@@ -11,6 +11,12 @@ Learner memory for the course platform (POC):
     the intake answers, and vice versa.
   - To honor a deletion request, delete the learner's folder from the
     repo by hand. Nothing else stores their data.
+
+v1.2 — retry on save collisions:
+  The page and the agent often save at the same moment. GitHub accepts
+  only one; the other used to fail and its fields (level, goal) were
+  lost. Now a rejected save re-reads the newest file, re-applies the
+  changes, and tries again (up to 4 times).
 
 v1.1 (dashboard prep) — new optional fields on "save":
   highest_slide   int   furthest slide reached (never goes down)
@@ -38,7 +44,7 @@ Browser test (GET):
 
 Vercel environment variables:
   GITHUB_TOKEN     — token that can read/write the private repo (already set)
-  PROFILES_REPO    — optional, default jdidonatojr/language-teammate-private
+  PROFILES_REPO    — optional, default jdidonatojr/esource-source-library
   PROFILES_PATH    — optional, default profiles
 """
 
@@ -53,9 +59,10 @@ import urllib.error
 from http.server import BaseHTTPRequestHandler
 
 GH_API = 'https://api.github.com'
-DEFAULT_REPO = 'jdidonatojr/language-teammate-private'
+DEFAULT_REPO = 'jdidonatojr/esource-source-library'
 DEFAULT_PATH = 'profiles'
 BRANCH = 'main'
+SAVE_TRIES = 4
 
 
 def cors(handler):
@@ -68,7 +75,8 @@ def gh_headers(token):
     return {'Authorization': f'Bearer {token}',
             'Accept': 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
-            'User-Agent': 'language-teammate-profile-store',
+            'User-Agent': 'esource-profile-store',
+            'Cache-Control': 'no-cache',
             'Content-Type': 'application/json'}
 
 
@@ -91,7 +99,8 @@ def repo():
 
 def gh_read(token, path):
     """Return (profile_dict_or_None, sha_or_None)."""
-    url = f'{GH_API}/repos/{repo()}/contents/{urllib.parse.quote(path)}?ref={BRANCH}'
+    url = (f'{GH_API}/repos/{repo()}/contents/{urllib.parse.quote(path)}'
+           f'?ref={BRANCH}&t={int(time.time() * 1000)}')
     req = urllib.request.Request(url, headers=gh_headers(token))
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
@@ -128,6 +137,81 @@ def to_int(v):
         return None
 
 
+def apply_changes(profile, params, now):
+    """Apply the requested fields to profile. Returns True if anything changed."""
+    changed = False
+
+    # ---- intake answers ----
+    if params.get('level') is not None:
+        lv = to_int(params['level'])
+        if lv is not None and 1 <= lv <= 5:
+            profile['level'] = lv
+            changed = True
+    if params.get('goal') is not None:
+        goal = str(params['goal']).strip()[:500]
+        if goal:
+            profile['goal'] = goal
+            changed = True
+
+    # ---- progress ----
+    if params.get('last_slide') is not None:
+        ls = to_int(params['last_slide'])
+        if ls is not None and ls >= 1:
+            profile['last_slide'] = ls
+            # highest_slide never goes down
+            if ls > int(profile.get('highest_slide', 0) or 0):
+                profile['highest_slide'] = ls
+            changed = True
+    if params.get('highest_slide') is not None:
+        hs = to_int(params['highest_slide'])
+        if hs is not None and hs >= 1 and hs > int(profile.get('highest_slide', 0) or 0):
+            profile['highest_slide'] = hs
+            changed = True
+    if params.get('total_slides') is not None:
+        ts = to_int(params['total_slides'])
+        if ts is not None and ts >= 1:
+            profile['total_slides'] = ts
+            changed = True
+
+    # completed = reached the last slide (set once, never unset)
+    ts = int(profile.get('total_slides', 0) or 0)
+    hs = int(profile.get('highest_slide', 0) or 0)
+    if ts and hs >= ts and not profile.get('completed'):
+        profile['completed'] = True
+        profile['completed_at'] = now
+        changed = True
+
+    # ---- language ----
+    if params.get('language') is not None:
+        lang = re.sub(r'[^a-zA-Z\-]', '', str(params['language']))[:8].lower()
+        if lang:
+            profile['language'] = lang
+            changed = True
+
+    # ---- sessions ----
+    if str(params.get('session', '')).strip() in ('1', 'true', 'yes'):
+        profile['sessions'] = int(profile.get('sessions', 0) or 0) + 1
+        profile.setdefault('first_seen', now)
+        changed = True
+
+    # ---- Knowledge Check ----
+    qr = to_int(params.get('quiz_right'))
+    qt = to_int(params.get('quiz_total'))
+    if qr is not None and qt is not None and qt >= 1 and 0 <= qr <= qt:
+        score = int(round(qr * 100.0 / qt))
+        quiz = profile.get('quiz') if isinstance(profile.get('quiz'), dict) else {}
+        quiz['right'] = qr
+        quiz['total'] = qt
+        quiz['score'] = score
+        quiz['best'] = max(score, int(quiz.get('best', 0) or 0))
+        quiz['attempts'] = int(quiz.get('attempts', 0) or 0) + 1
+        quiz['when'] = now
+        profile['quiz'] = quiz
+        changed = True
+
+    return changed
+
+
 def handle(params):
     """Shared logic for POST bodies and GET query strings."""
     token = os.environ.get('GITHUB_TOKEN', '').strip()
@@ -152,96 +236,36 @@ def handle(params):
         return 200, {'ok': True, 'profile': profile}
 
     if action == 'save':
-        try:
-            profile, sha = gh_read(token, path)
-        except Exception:
-            profile, sha = None, None
-        if not isinstance(profile, dict):
-            profile = {}
+        for attempt in range(SAVE_TRIES):
+            try:
+                profile, sha = gh_read(token, path)
+            except Exception:
+                profile, sha = None, None
+            if not isinstance(profile, dict):
+                profile = {}
 
-        now = int(time.time())
-        changed = False
+            now = int(time.time())
+            if not apply_changes(profile, params, now):
+                return 400, {'ok': False, 'message': 'Nothing to save.'}
 
-        # ---- intake answers ----
-        if params.get('level') is not None:
-            lv = to_int(params['level'])
-            if lv is not None and 1 <= lv <= 5:
-                profile['level'] = lv
-                changed = True
-        if params.get('goal') is not None:
-            goal = str(params['goal']).strip()[:500]
-            if goal:
-                profile['goal'] = goal
-                changed = True
-
-        # ---- progress ----
-        if params.get('last_slide') is not None:
-            ls = to_int(params['last_slide'])
-            if ls is not None and ls >= 1:
-                profile['last_slide'] = ls
-                # highest_slide never goes down
-                if ls > int(profile.get('highest_slide', 0) or 0):
-                    profile['highest_slide'] = ls
-                changed = True
-        if params.get('highest_slide') is not None:
-            hs = to_int(params['highest_slide'])
-            if hs is not None and hs >= 1 and hs > int(profile.get('highest_slide', 0) or 0):
-                profile['highest_slide'] = hs
-                changed = True
-        if params.get('total_slides') is not None:
-            ts = to_int(params['total_slides'])
-            if ts is not None and ts >= 1:
-                profile['total_slides'] = ts
-                changed = True
-
-        # completed = reached the last slide (set once, never unset)
-        ts = int(profile.get('total_slides', 0) or 0)
-        hs = int(profile.get('highest_slide', 0) or 0)
-        if ts and hs >= ts and not profile.get('completed'):
-            profile['completed'] = True
-            profile['completed_at'] = now
-            changed = True
-
-        # ---- language ----
-        if params.get('language') is not None:
-            lang = re.sub(r'[^a-zA-Z\-]', '', str(params['language']))[:8].lower()
-            if lang:
-                profile['language'] = lang
-                changed = True
-
-        # ---- sessions ----
-        if str(params.get('session', '')).strip() in ('1', 'true', 'yes'):
-            profile['sessions'] = int(profile.get('sessions', 0) or 0) + 1
+            profile['email'] = email
+            profile['course'] = course
             profile.setdefault('first_seen', now)
-            changed = True
-
-        # ---- Knowledge Check ----
-        qr = to_int(params.get('quiz_right'))
-        qt = to_int(params.get('quiz_total'))
-        if qr is not None and qt is not None and qt >= 1 and 0 <= qr <= qt:
-            score = int(round(qr * 100.0 / qt))
-            quiz = profile.get('quiz') if isinstance(profile.get('quiz'), dict) else {}
-            quiz['right'] = qr
-            quiz['total'] = qt
-            quiz['score'] = score
-            quiz['best'] = max(score, int(quiz.get('best', 0) or 0))
-            quiz['attempts'] = int(quiz.get('attempts', 0) or 0) + 1
-            quiz['when'] = now
-            profile['quiz'] = quiz
-            changed = True
-
-        if not changed:
-            return 400, {'ok': False, 'message': 'Nothing to save.'}
-
-        profile['email'] = email
-        profile['course'] = course
-        profile.setdefault('first_seen', now)
-        profile['updated'] = now
-        try:
-            gh_write(token, path, profile, sha)
-        except Exception:
-            return 500, {'ok': False, 'message': 'The profile could not be saved. Try again shortly.'}
-        return 200, {'ok': True}
+            profile['updated'] = now
+            try:
+                gh_write(token, path, profile, sha)
+                return 200, {'ok': True}
+            except urllib.error.HTTPError as e:
+                # 409 / 422 = someone else saved first. Wait, re-read, retry.
+                if e.code in (409, 422) and attempt < SAVE_TRIES - 1:
+                    time.sleep(0.8 * (attempt + 1))
+                    continue
+                return 500, {'ok': False, 'message': 'The profile could not be saved. Try again shortly.'}
+            except Exception:
+                if attempt < SAVE_TRIES - 1:
+                    time.sleep(0.8 * (attempt + 1))
+                    continue
+                return 500, {'ok': False, 'message': 'The profile could not be saved. Try again shortly.'}
 
     return 400, {'ok': False, 'message': 'Unknown action.'}
 
